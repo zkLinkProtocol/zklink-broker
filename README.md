@@ -1,5 +1,7 @@
 # zkLink Broker
 ## config
+Add `./secret.json` first
+
 ```json
 {
     "prikey":"",
