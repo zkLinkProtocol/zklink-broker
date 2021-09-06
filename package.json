@@ -9,14 +9,19 @@
     "@types/node": "^16.7.1",
     "@uniswap/v2-core": "^1.0.1",
     "@uniswap/v2-periphery": "^1.1.0-beta.0",
-    "ethers": "^5.4.5",
-    "koa2": "^2.0.0-alpha.7",
+    "koa": "^2.13.1",
+    "koa-router": "^10.1.1",
     "minimist": "^1.2.5",
     "ts-node": "^10.2.1",
     "typescript": "^4.3.5"
   },
   "devDependencies": {
-    "ethereum-waffle": "^3.4.0"
+    "@types/koa": "^2.13.4",
+    "@types/koa-bodyparser": "^4.3.3",
+    "ethereum-waffle": "^3.4.0",
+    "ethers": "^5.4.6",
+    "koa-bodyparser": "^4.3.0",
+    "koa2": "^2.0.0-alpha.7"
   },
   "scripts": {
     "build": "waffle"

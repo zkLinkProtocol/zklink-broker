@@ -12,7 +12,11 @@ let _providers = {
     goerli: new providers.JsonRpcProvider("https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",{
         name:"goerli-testnet",
         chainId: 5,
-    })
+    }),
+    heco_test: new providers.JsonRpcProvider("https://http-testnet.huobichain.com",{
+        name:"heco-testnet",
+        chainId: 256,
+    }),
 }
 
 export {
