@@ -9,6 +9,16 @@ Add `./secret.json` first
 }
 ```
 
+and then, create `./contract_address.json`
+```json
+{
+    "rinkeby": "",
+    "matic_test": "",
+    "goerli": "",
+    "heco_test": ""
+}
+```
+
 ## setup
 ```
 yarn install
