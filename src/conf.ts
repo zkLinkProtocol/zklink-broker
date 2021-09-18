@@ -1,5 +1,8 @@
 import { providers } from "ethers"
 
+
+let networkMapping: string[] = ["matic_test", "rinkeby", "heco_test", "goerli"]
+
 let _providers = {
     rinkeby: new providers.JsonRpcProvider("https://rinkeby.infura.io/v3/34d267a41d3248d9b8ae6393a3f81838",{
         name:"rinkeby-testnet",
@@ -21,6 +24,5 @@ let _providers = {
 
 export {
     _providers as providers,
-
-
+    networkMapping
 }
