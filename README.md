@@ -47,6 +47,19 @@ command : `npx ts-node src/utils/prikey-tools.ts`
 - `-p : path - create or list keys path`
 - `--cid : chain id`
 - `--tid : token id`
+
+### Example
+- create key 
+  
+    `npx ts-node src/utils/prikey-tools.ts -t create -c 10 -p /your/path`
+
+- list key gas coin balance and broker_allowance 
+  
+    `npx ts-node src/utils/prikey-tools.ts -t list -p /your/path --cid 0 --tid 4`
+
+- approve broker, approve singer to sign broker tx instead of accepter(config at secre.json@accepter-addr)
+    
+    `npx ts-node src/utils/prikey-tools.ts -t approve -p /your/path --cid 0 --tid 4`
 ## Setup
 ```
 yarn install
