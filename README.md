@@ -67,5 +67,5 @@ yarn install
 
 ### run
 ```
-npx ts-node src/index.ts
+pm2 start
 ```
