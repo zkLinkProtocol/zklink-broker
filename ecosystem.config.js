@@ -1,7 +1,7 @@
 module.exports = {
   apps: [{
     interpreter: './node_modules/.bin/ts-node',
-    interpreter_args: '-P ./src -r tsconfig-paths/register',
+    interpreter_args: '-P ./tsconfig.json ',
     cwd: './',
     env: {
       NODE_ENV: 'development'
