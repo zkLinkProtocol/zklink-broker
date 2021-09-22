@@ -7,6 +7,10 @@
         "broker-success": {
             "type": "file",
             "filename": "logs/broker-success.log"
+        },
+        "mongo-log": {
+            "type": "file",
+            "filename": "logs/mongo.log"
         }
     },
     "categories": {
@@ -21,6 +25,12 @@
                 "broker-success"
             ],
             "level": "info"
+        },
+        "mongo-log": {
+            "appenders": [
+                "mongo-log"
+            ],
+            "level": "debug"
         }
     }
 }
