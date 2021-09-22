@@ -69,3 +69,8 @@ yarn install
 ```
 pm2 start
 ```
+
+### stop
+```
+pm2 stop broker-server
+```
