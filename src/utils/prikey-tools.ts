@@ -71,7 +71,7 @@ async function list() {
     console.log("Accepter: ", accepter);
     console.log(["Signer Addr", "Gas Coin Balance", "Broker Allowance"])
     while (truple.length) {
-        console.log(await truple.pop())
+        console.log(await truple.shift())
     }
 }
 // -p -c 
@@ -125,7 +125,7 @@ async function transferBatch() {
         return "#transfer\t" + tx.to + "\t" + amount + "\t" + tx.hash;
     })
     while (truple.length) {
-        console.log(await truple.pop())
+        console.log(await truple.shift())
     }
 }
 let start = argv['start'] || 0;
