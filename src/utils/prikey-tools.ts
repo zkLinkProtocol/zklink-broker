@@ -3,9 +3,11 @@ import path from 'path';
 import fs from 'fs';
 import { providers, networkMap } from "../conf";
 import zkLink from "../zkLink.json"
+import BrokerAccepter from "../../build/BrokerAccepter.json"
 // import MockErc20 from '../MockErc20.json'
 import secret from "../../secret.json"
-
+import accepter_contract_address from "../../accepter_contract_address.json"
+import { deployContract, MockProvider, solidity, } from "ethereum-waffle"
 import contract_addrss from "../../contract_address.json"
 
 import { Contract, Wallet, utils, BigNumber } from "ethers"
@@ -30,6 +32,8 @@ async function main() {
         case "list": await list(); break;
         case "approve": await brokerApprove(); break;
         case "transfer": await transferBatch(); break;
+        case "deploy": await deployBatchApprove(); break;
+        case "batchapprove": await batchApprove(); break;
         default: {
             console.log("\nprivate key manage tool")
             console.log("-t : create|list|approve|transfer");
@@ -64,7 +68,7 @@ async function list() {
         let balance = await wallet.getBalance();
 
         let zkLinkContract = new Contract(contract_addrss[networkName], JSON.stringify(zkLink.abi), wallet);
-        let allowanceAmount = await zkLinkContract.brokerAllowance(tokenId, accepter, wallet.address);
+        let allowanceAmount = await zkLinkContract.brokerAllowance(tokenId, "0x78a866a81ecF30333BD3FDDA4620Be3516809d62", wallet.address);
 
         return [wallet.address, formatEther(balance), formatEther(allowanceAmount)]
     })
@@ -169,6 +173,47 @@ async function brokerApprove() {
     }
 }
 
+// -p --cid --tid
+async function batchApprove() {
+    let filenames = fs.readdirSync(path.normalize(keysPath));
+    filenames = filenames
+        .filter(f => f.endsWith('.key'))
+        .filter(f => f.startsWith('.key'));
+
+    let networkName: string = networkMap[chainId];
+    if (!networkName) {
+        console.error("Broker: Error, network name not exist. chainId: %d", chainId);
+        return;
+    }
+
+    let accepter = new Wallet(secret['accepter-key'], providers[networkName]);
+    // let nonce = await accepter.getTransactionCount();//latest
+    // let gasPrice = await accepter.getGasPrice();
+    let spenders = filenames.map((v, _) => {
+        let key = fs.readFileSync(path.join(keysPath, v));
+        let spender = new Wallet(key.toString());
+        return spender.address;
+    })
+    console.log(spenders);
+    // cid = 0 0x85c040f0937600A08432720c030980Ac8F21eB5e
+    let batch = new Contract(accepter_contract_address[networkName], JSON.stringify(BrokerAccepter.abi), accepter);
+
+    let tx = await batch.connect(accepter).approve(contract_addrss[networkName], spenders, tokenId, BigNumber.from("0xffffffff"), { gasLimit: 500000 })
+    console.log(tx);
+}
+
+//--cid 
+async function deployBatchApprove() {
+    let networkName: string = networkMap[chainId];
+    if (!networkName) {
+        console.error("Broker: Error, network name not exist. chainId: %d", chainId);
+        return;
+    }
+
+    let accepter = new Wallet(secret['accepter-key'], providers[networkName]);
+    let tx = await deployContract(accepter, BrokerAccepter, [], { gasLimit: 1000000 });
+    console.log(tx.address);
+}
 main()
     .catch(err => {
         console.error(err);
