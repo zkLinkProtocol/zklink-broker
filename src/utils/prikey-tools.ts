@@ -9,30 +9,36 @@ import secret from "../../secret.json"
 import contract_addrss from "../../contract_address.json"
 
 import { Contract, Wallet, utils } from "ethers"
-import { formatEther } from '@ethersproject/units';
+import { formatEther, parseEther } from '@ethersproject/units';
+import { TransactionRequest } from '@ethersproject/providers';
 // -c : keys count
 // -p : keys path
-// -t : type : {create, list , approve}
-var argv = require('minimist')(process.argv.slice(2), { 'string': ['p', 't'] });
+// -t : type : {create, list , approve, transfer}
+var argv = require('minimist')(process.argv.slice(2), { 'string': ['p', 't', 'amount', 'min_amount'] });
 
 let count = argv['c'] || 10;
 let keysPath = argv["p"] || process.cwd();
 let type = argv["t"];
 let chainId = argv["cid"] || 0;//defalt matic testnet
 let tokenId = argv["tid"] || 1;// 
+let minAmount = argv["min_amount"] || "0";
+let amount = argv["amount"] || "0";
 async function main() {
 
     switch (type) {
         case "create": create(); break;
         case "list": await list(); break;
         case "approve": await brokerApprove(); break;
+        case "transfer": await transferBatch(); break;
         default: {
             console.log("\nprivate key manage tool")
-            console.log("-t : create|list|approve");
+            console.log("-t : create|list|approve|transfer");
             console.log("-c : create keys count");
             console.log("-p : create&list keys path");
             console.log("--cid : chain id");
             console.log("--tid : token id");
+            console.log("--min_amont :  transfer filter amount")
+            console.log("--amont :  transfer amount")
         }
     }
 
@@ -58,9 +64,9 @@ async function list() {
         let balance = await wallet.getBalance();
 
         let zkLinkContract = new Contract(contract_addrss[networkName], JSON.stringify(zkLink.abi), wallet);
-        let allowanceAmount = 0;//await zkLinkContract.brokerAllowance(tokenId, accepter, wallet.address);
+        let allowanceAmount = await zkLinkContract.brokerAllowance(tokenId, accepter, wallet.address);
 
-        return [wallet.address, formatEther(balance), allowanceAmount]
+        return [wallet.address, formatEther(balance), formatEther(allowanceAmount)]
     })
     console.log("Accepter: ", accepter);
     console.log(["Signer Addr", "Gas Coin Balance", "Broker Allowance"])
@@ -80,6 +86,48 @@ function create() {
         fs.writeFileSync(filename, obj.privateKey);
     }
 }
+// -p --cid --min_amount --amount
+async function transferBatch() {
+    let filenames = fs.readdirSync(path.normalize(keysPath));
+    filenames = filenames
+        .filter(f => f.endsWith('.key'))
+        .filter(f => f.startsWith('.key'));
+
+    let networkName: string = networkMap[chainId];
+    if (!networkName) {
+        console.error("Broker: Error, network name not exist. chainId: %d", chainId);
+        return;
+    }
+
+    let accepter = new Wallet(secret['accepter-key'], providers[networkName]);
+    let nonce = await accepter.getTransactionCount();//latest
+    let gasPrice = await accepter.getGasPrice();
+    let truple = filenames.map(async (v, _) => {
+        let key = fs.readFileSync(path.join(keysPath, v));
+
+        let spender = new Wallet(key.toString(), providers[networkName]);
+        let spender_bal = await spender.getBalance();
+        if (spender_bal.gt(parseEther(minAmount))) {
+            return "$skip    \t" + spender.address + "\t" + formatEther(spender_bal);
+        }
+        let sendTx: TransactionRequest = {
+            to: spender.address,
+            from: accepter.address,
+            nonce: nonce,
+            gasLimit: 30000,
+            data: "",
+            value: parseEther(amount),
+            type: 0,
+            gasPrice: gasPrice
+        };
+        nonce = nonce + 1;
+        let tx = await accepter.sendTransaction(sendTx)
+        return "#transfer\t" + tx.to + "\t" + amount + "\t" + tx.hash;
+    })
+    while (truple.length) {
+        console.log(await truple.pop())
+    }
+}
 // -p --cid --tid
 async function brokerApprove() {
     let filenames = fs.readdirSync(path.normalize(keysPath));
@@ -93,10 +141,10 @@ async function brokerApprove() {
         return;
     }
 
+    let accepter = new Wallet(secret['accepter-key'], providers[networkName]);
     let truple = filenames.map(async (v, _) => {
         let key = fs.readFileSync(path.join(keysPath, v));
 
-        let accepter = new Wallet(secret['accepter-key'], providers[networkName]);
         let spender = new Wallet(key.toString());
 
         let zkLinkContract = new Contract(contract_addrss[networkName], JSON.stringify(zkLink.abi), accepter);

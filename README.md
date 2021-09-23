@@ -50,16 +50,26 @@ command : `npx ts-node src/utils/prikey-tools.ts`
 
 ### Example
 - create key 
-  
-    `npx ts-node src/utils/prikey-tools.ts -t create -c 10 -p /your/path`
+  - -c : create keys count
+    
+  `npx ts-node src/utils/prikey-tools.ts -t create -c 10 -p /your/path`
 
 - list key gas coin balance and broker_allowance 
   
     `npx ts-node src/utils/prikey-tools.ts -t list -p /your/path --cid 0 --tid 4`
 
 - approve broker, approve singer to sign broker tx instead of accepter(config at secre.json@accepter-addr)
-    
-    `npx ts-node src/utils/prikey-tools.ts -t approve -p /your/path --cid 0 --tid 4`
+  - --tid : token id
+  - 
+  `npx ts-node src/utils/prikey-tools.ts -t approve -p /your/path --cid 0 --tid 4`
+
+- batch transfer gas coin
+  - -p : key path
+  - --cid : chain id
+  - --amount : transfer amount
+  - --min_amount : filter
+
+  `npx ts-node src/utils/prikey-tools.ts -c 1 -p /your/path -t transfer --cid 0 --amount 0.001 --min_amount 0.5`
 ## Setup
 ```
 yarn install
