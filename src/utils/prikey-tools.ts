@@ -172,7 +172,7 @@ async function brokerApprove() {
         return "#broker approve\t" + tx.to + "\t" + tx.hash;;
     })
     while (truple.length) {
-        console.log(await truple.pop())
+        console.log(await truple.shift())
     }
 }
 
