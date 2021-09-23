@@ -9,6 +9,7 @@ import { getLogger } from "./log4js";
 const loggerAccept = getLogger();// categorie: broker-accept
 import { accept } from './broker';
 import { initSigner } from './signer'
+import { hexlify } from 'ethers/lib/utils';
 
 async function main() {
     let signerCount = await initSigner();
@@ -24,6 +25,7 @@ async function main() {
     app.use(bodyParser())
     router.post('/accept', async (ctx: Context) => {
         let { chain_id, receiver, token_id, amount, withdrawFee, nonce } = ctx.request.body;
+        receiver = hexlify(receiver, { allowMissingPrefix: true });
         loggerAccept.info(chain_id, receiver, token_id, amount, withdrawFee, nonce);
         await accept(Number(chain_id), receiver, Number(token_id), amount, Number(withdrawFee), Number(nonce));
 
