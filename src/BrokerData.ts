@@ -64,7 +64,7 @@ class BrokerData {
         arr.push(this.receiver);
         arr.push(hexlify(this.tokenId));
         arr.push(hexlify(this.tokenIdReceive));
-        arr.push(hexlify(this.amount, { allowMissingPrefix: true }));
+        arr.push(hexlify(this.amount, { allowMissingPrefix: true, hexPad: "left" }));
         arr.push(hexlify(this.withdrawFee));
         arr.push(hexlify(this.nonce_l2));
         this.hashId = keccak256(RLP.encode(arr));
