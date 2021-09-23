@@ -1,14 +1,14 @@
 let Accounts = require('web3-eth-accounts');
 import path from 'path';
 import fs from 'fs';
-import { providers, networkMap, tokenContractMap } from "../conf";
+import { providers, networkMap } from "../conf";
 import zkLink from "../zkLink.json"
 // import MockErc20 from '../MockErc20.json'
 import secret from "../../secret.json"
 
 import contract_addrss from "../../contract_address.json"
 
-import { Contract, Wallet, utils } from "ethers"
+import { Contract, Wallet, utils, BigNumber } from "ethers"
 import { formatEther, parseEther } from '@ethersproject/units';
 import { TransactionRequest } from '@ethersproject/providers';
 // -c : keys count
@@ -142,15 +142,27 @@ async function brokerApprove() {
     }
 
     let accepter = new Wallet(secret['accepter-key'], providers[networkName]);
+    let nonce = await accepter.getTransactionCount();//latest
+    let gasPrice = await accepter.getGasPrice();
     let truple = filenames.map(async (v, _) => {
         let key = fs.readFileSync(path.join(keysPath, v));
 
         let spender = new Wallet(key.toString());
-
         let zkLinkContract = new Contract(contract_addrss[networkName], JSON.stringify(zkLink.abi), accepter);
-        let tx = await zkLinkContract.connect(accepter).brokerApprove(tokenId, spender.address, "0xffffffffffffffff", { gasLimit: 200000 });
 
-        return tx;
+        let sendTx: TransactionRequest = {
+            to: zkLinkContract.address,
+            from: accepter.address,
+            nonce: nonce,
+            gasLimit: 200000,
+            data: zkLinkContract.interface.encodeFunctionData("brokerApprove", [tokenId, spender.address, BigNumber.from("0xffffffffffffffffffffffffffffffff")]),
+            value: 0,
+            type: 0,
+            gasPrice: gasPrice
+        };
+        nonce = nonce + 1;
+        let tx = await accepter.sendTransaction(sendTx);
+        return "#broker approve\t" + tx.to + "\t" + tx.hash;;
     })
     while (truple.length) {
         console.log(await truple.pop())
