@@ -13,10 +13,13 @@ import { initSigner } from './signer'
 async function main() {
     let signerCount = await initSigner();
     loggerAccept.info("initSigner: ", signerCount);
-    if (signerCount == 0) {
-        console.error("signer count == 0, process exit!!!");
-        process.exit();
-    }
+    signerCount.forEach((v, _) => {
+        if (v == 0) {
+            console.error("signer count == 0, process exit!!!");
+            process.exit();
+        }
+    });
+
 
     app.use(bodyParser())
     router.post('/accept', async (ctx: Context) => {

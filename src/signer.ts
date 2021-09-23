@@ -2,22 +2,28 @@ import secret from "../secret.json"
 import { promisify } from 'util'
 import { readFile as _readFile, readdir as _readdir } from 'fs'
 import path from 'path'
-
+import { networkMap } from './conf'
 const readFile = promisify(_readFile);
 const readdir = promisify(_readdir);
 
-let signerCache = [];
-let cur = 0;
-async function init(): Promise<number> {
+let signerCache = [];//chainid => []
+let cur = []; //chainid => cur
+networkMap.forEach(() => {
+    cur.push(0)
+});
+async function init(): Promise<number[]> {
     let files = await readSignerFile();
-    signerCache = await checkSigners(files);
+    await networkMap.forEach(async (_, k) => {
+        cur.push(0)
+        signerCache[k] = await checkSigners(files, k);
+    });
 
-    return signerCache.length;
+    return signerCache.map(v => v.length);
 }
 
-function getSigner():string {
-    let res = signerCache[cur];
-    cur = (cur + 1) % signerCache.length;
+function getSigner(chainId: number): string {
+    let res = signerCache[chainId][cur[chainId]];
+    cur[chainId] = (cur[chainId] + 1) % signerCache[chainId].length;
     return res;
 }
 
@@ -38,7 +44,7 @@ async function readSignerFile() {
 }
 
 //TODO
-async function checkSigners(keys) {
+async function checkSigners(keys, chainId: number) {
     //check format len=64
     //check ETH balance(BNB,MATIC...)
     //check allowance
@@ -46,14 +52,17 @@ async function checkSigners(keys) {
 }
 
 setInterval(async () => {
-    signerCache = await checkSigners(signerCache);
-    //TODO 
-    if (signerCache.length < 10) {
-        //notify admin, mail,sms...
-    }
-    if (signerCache.length == 0) {
-        process.exit();
-    }
+    signerCache.forEach(async (v, i) => {
+        signerCache[i] = await checkSigners(v, i);
+        //TODO 
+        if (signerCache[i].length < 10) {
+            //notify admin, mail,sms...
+        }
+        if (signerCache[i].length == 0) {
+            process.exit();
+        }
+    })
+
 }, 60000);//60s
 export {
     init as initSigner,
