@@ -6,7 +6,7 @@ import zkLink from "./zkLink.json"
 import { getSigner } from "./signer";
 import { insertBrokerData, updateConfirmTime, updateNonceAndTxId, findMany } from "./mongo";
 import { TransactionRequest } from "@ethersproject/providers";
-
+import AccepterContractAddress from "../accepter_contract_address.json"
 import { getLogger } from "./log4js";
 import { BrokerData } from "./BrokerData";
 import { keccak256 } from "ethers/lib/utils";
@@ -33,7 +33,7 @@ async function accept(chainId: number, receiver: string, tokenId: number, amount
     }
 
     let wallet = new Wallet(getSigner(chainId), providers[networkName]);
-    let accepter = secret["accepter-addr"];
+    let accepter = AccepterContractAddress[networkName];//secret["accepter-addr"];
     let tokenIdReceive = tokenId;
     let data = new BrokerData(
         secret["broker-name"],
