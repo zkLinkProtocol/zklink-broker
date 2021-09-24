@@ -169,7 +169,7 @@ async function brokerApprove() {
         };
         nonce = nonce + 1;
         let tx = await accepter.sendTransaction(sendTx);
-        return "#broker approve\t" + tx.to + "\t" + tx.hash;;
+        return "#broker approve\t" + spender.address + "\t" + tx.hash;;
     })
     while (truple.length) {
         console.log(await truple.shift())
