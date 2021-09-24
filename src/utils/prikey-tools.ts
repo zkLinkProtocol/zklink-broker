@@ -75,7 +75,7 @@ async function list() {
     console.log("Accepter: ", accepter);
     console.log(["Signer Addr", "Gas Coin Balance", "Broker Allowance"])
     while (truple.length) {
-        console.log(await truple.pop())
+        console.log(await truple.shift())
     }
 }
 // -p -c 
@@ -129,10 +129,12 @@ async function transferBatch() {
         return "#transfer\t" + tx.to + "\t" + amount + "\t" + tx.hash;
     })
     while (truple.length) {
-        console.log(await truple.pop())
+        console.log(await truple.shift())
     }
 }
-// -p --cid --tid
+let start = argv['start'] || 0;
+let end = argv['end'] || 0;
+// -p --cid --tid --start --end
 async function brokerApprove() {
     let filenames = fs.readdirSync(path.normalize(keysPath));
     filenames = filenames
@@ -148,7 +150,12 @@ async function brokerApprove() {
     let accepter = new Wallet(secret['accepter-key'], providers[networkName]);
     let nonce = await accepter.getTransactionCount();//latest
     let gasPrice = await accepter.getGasPrice();
-    let truple = filenames.map(async (v, _) => {
+
+    if (end == 0) {
+        end = filenames.length;
+    }
+
+    let truple = filenames.slice(start, end).map(async (v, _) => {
         let key = fs.readFileSync(path.join(keysPath, v));
 
         let spender = new Wallet(key.toString());
@@ -166,10 +173,10 @@ async function brokerApprove() {
         };
         nonce = nonce + 1;
         let tx = await accepter.sendTransaction(sendTx);
-        return "#broker approve\t" + tx.to + "\t" + tx.hash;;
+        return "#broker approve\t" + spender.address + "\t" + tx.hash;;
     })
     while (truple.length) {
-        console.log(await truple.pop())
+        console.log(await truple.shift())
     }
 }
 
