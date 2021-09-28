@@ -91,7 +91,7 @@ program
 program.parse();
 
 async function list(networkName: string, filenames: Array<string>, tokenId: number) {
-    let accepter = AccepterContractAddress[networkName];// secret['accepter-addr'];
+    let accepter = AccepterContractAddress[networkName];
     let zkLinkContract = new Contract(contract_addrss[networkName], JSON.stringify(zkLink.abi), providers[networkName]);
     let governanceContract = new Contract(GovernanceAddress[networkName], JSON.stringify(Governance.abi), providers[networkName]);
     let tokenAddress = await governanceContract.tokenAddresses(tokenId);

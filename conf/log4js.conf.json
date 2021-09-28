@@ -1,0 +1,36 @@
+{
+    "appenders": {
+        "broker-accept": {
+            "type": "file",
+            "filename": "logs/broker-accept.log"
+        },
+        "broker-success": {
+            "type": "file",
+            "filename": "logs/broker-success.log"
+        },
+        "mongo-log": {
+            "type": "file",
+            "filename": "logs/mongo.log"
+        }
+    },
+    "categories": {
+        "default": {
+            "appenders": [
+                "broker-accept"
+            ],
+            "level": "debug"
+        },
+        "broker-success": {
+            "appenders": [
+                "broker-success"
+            ],
+            "level": "info"
+        },
+        "mongo-log": {
+            "appenders": [
+                "mongo-log"
+            ],
+            "level": "debug"
+        }
+    }
+}

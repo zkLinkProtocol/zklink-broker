@@ -33,7 +33,7 @@ async function accept(chainId: number, receiver: string, tokenId: number, amount
     }
 
     let wallet = new Wallet(getSigner(chainId), providers[networkName]);
-    let accepter = AccepterContractAddress[networkName];//secret["accepter-addr"];
+    let accepter = AccepterContractAddress[networkName];
     let tokenIdReceive = tokenId;
     let data = new BrokerData(
         secret["broker-name"],

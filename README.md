@@ -1,21 +1,40 @@
 # zkLink Broker
+This program allows signers to replace accepter to sign for broker message, which speeds up the response time of brokers. 
+
+And provides a tool of private-key management and states check for signers.
 ## config
-Add `./secret.json` first
+`./conf/secret.json`
 
 ```json
 {
-    "broker-name":"", // Each instance should have a unique identity
-    "mongo-uri":"", // mongodb connection uri
-    "mongo-db-name":"", // mongodb db name
-    "accepter-key":"", //option. accepter prikey, if the broker do not need to pay ETH,BNB,MATIC..., no need to fill this item.
-    "accepter-addr":"",// accepter's address
-    "signer-files-path":"", //local fs path, store all signer prikey
-    "port":3000
+    "broker-name": "<Each instance should have a unique identity>",
+    "mongo-uri": "<mongodb connection uri>",
+    "mongo-db-name": "<mongodb db name>",
+    "accepter-key": "<option. accepter prikey, if the broker do not need to pay ETH,BNB,MATIC..., no need to fill this item.>",
+    "signer-files-path": "<local fs path, store all signer prikey>",
+    "port": 3000
 }
 ```
 
-
-and then, create `./contract_address.json`
+`./conf/contract_address.json`
+```json
+{
+    "rinkeby": "",
+    "matic_test": "",
+    "goerli": "",
+    "heco_test": ""
+}
+```
+`./conf/accepter_contract_address.json`
+```json
+{
+    "rinkeby": "",
+    "matic_test": "",
+    "goerli": "",
+    "heco_test": ""
+}
+```
+`./conf/governance_address.json`
 ```json
 {
     "rinkeby": "",
@@ -25,51 +44,75 @@ and then, create `./contract_address.json`
 }
 ```
 
-## broker system design
-### Init
-* read local fs, `signer-files-path`, this broker's signer key files.(different broker instance must hold different signer keys.)
-* check signer format is correct
-* check signer's balance
-* check if the accepter had set allowance for signer 
-* cache all signer keys in memory
-
-### broker sign
-* one by one to use signer key
-* ...
-
 ## Key Tool
-key-tools.ts helps you to create or list all signer keys.
-### src/utils/prikey-tools.ts
-command : `npx ts-node src/utils/prikey-tools.ts`
+src/utils/prikey-tools.ts help to create or list all signer keys.
 
-- `-t : type - create|list|approve`
-- `-c : count - create keys count`
-- `-p : path - create or list keys path`
-- `--cid : chain id`
-- `--tid : token id`
+```
+Usage: yarn broker [options] [command]
 
-### Example
-- create key 
-  - -c : create keys count
-    
-  `npx ts-node src/utils/prikey-tools.ts -t create -c 10 -p /your/path`
+Options:
+  -V, --version       output the version number
+  -h, --help          display help for command
 
-- list key gas coin balance and broker_allowance 
-  
-    `npx ts-node src/utils/prikey-tools.ts -t list -p /your/path --cid 0 --tid 4`
+Commands:
+  list [options]
+  create [options]
+  approve [options]
+  transfer [options]
+  deploy [options]
+  help [command]      display help for command
+```
 
-- approve broker, approve singer to sign broker tx instead of accepter(config at secre.json@accepter-addr)
-  - --tid : token id
-  - 
-  `npx ts-node src/utils/prikey-tools.ts -t approve -p /your/path --cid 0 --tid 4`
+### create signer prikey
+```
+Usage: yarn broker create [options]
 
-- batch transfer gas coin
-  - -p : key path
-  - --cid : chain id
-  - --amount : transfer amount
-  - --min_amount : filter
+Options:
+  -p, --keys-path <keysPath>    Keys Path
+  -n, --keys-Count <keysCount>  create Keys Count (default: 1)
+  -h, --help                    display help for command
+```
 
-  `npx ts-node src/utils/prikey-tools.ts -c 1 -p /your/path -t transfer --cid 0 --amount 0.001 --min_amount 0.5`
+`yarn broker create -p /your/path/keys -n 10`
+
+### list accepter and all keys info
+```
+Usage: yarn broker list [options]
+
+Options:
+  -c, --network-name <networkName>  Network Name (choices: "matic_test", "heco_test", "rinkeby", "goerli")
+  -t, --token-id <tokenId>          Token ID
+  -p, --keys-path <keysPath>        Keys Path
+  -h, --help                        display help for command
+```
+
+`yarn broker list -c matic_test -p ./keys/ -t 1 `
+
+### batch approve singer to sign broker'tx instead of accepter-contract
+before `yarn broker approve`, should execute `yarn build` to compile smart contract code
+```
+Usage: yarn broker approve [options]
+
+Options:
+  -p, --keys-path <keysPath>        Keys Path
+  -t, --token-id <tokenId>          Token ID
+  -c, --network-name <networkName>  Network Name (choices: "matic_test", "heco_test", "rinkeby", "goerli")
+  -h, --help                        display help for command
+```
+
+### batch transfer ETH(native chain token) to signers 
+
+```
+Usage: yarn broker transfer [options]
+
+Options:
+  -p, --keys-path <keysPath>         Keys Path
+  -c, --network-name <networkName>   Network Name (choices: "matic_test", "heco_test", "rinkeby", "goerli")
+  -v, --amount <amount>              transfer amount to each spender
+  -f, --filterAmount <filterAmount>  filter amount
+  -h, --help                         display help for command
+```
+
 ## Setup
 ```
 yarn install
