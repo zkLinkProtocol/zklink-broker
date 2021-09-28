@@ -9,6 +9,8 @@
     "@types/node": "^16.7.1",
     "@uniswap/v2-core": "^1.0.1",
     "@uniswap/v2-periphery": "^1.1.0-beta.0",
+    "commander": "^8.2.0",
+    "is-number": "^7.0.0",
     "koa": "^2.13.1",
     "koa-router": "^10.1.1",
     "log4js": "^6.3.0",
@@ -26,6 +28,7 @@
     "koa2": "^2.0.0-alpha.7"
   },
   "scripts": {
-    "build": "waffle"
+    "build": "waffle",
+    "broker": "npx ts-node src/utils/prikey-tools.ts"
   }
 }

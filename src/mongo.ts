@@ -19,7 +19,6 @@ async function handle() {
     while (FIFO.length) {
         await FIFO.shift()(collection);
     }
-
 }
 setInterval(async () => {
     if (FIFO.length == 0) {
@@ -41,6 +40,7 @@ function createIndex() {
         let res = await col.createIndex({ 'hashId': 1 }, { unique: true });
         log.isDebugEnabled &&
             log.debug('mongodb createIndex => ', res);
+
     });
 }
 
@@ -54,7 +54,7 @@ function insert(arr: Array<BrokerData>) {
 function updateNonceAndTxId(hashId: string, nonce: string, txId: string, signTime: number, signer: string) {
     FIFO.push(async col => {
         let res = await col.updateOne({ 'hashId': hashId },
-            { '$set': { 'nonce': nonce, 'txId': txId, 'signTime': signTime ,'signer': signer} });
+            { '$set': { 'nonce': nonce, 'txId': txId, 'signTime': signTime, 'signer': signer } });
         log.isDebugEnabled &&
             log.debug('mongodb update', res);
     });
@@ -67,33 +67,20 @@ function updateConfirmTime(hashId: string, confirmTime: number) {
             log.debug('mongodb update', res);
     });
 }
-async function find(handle) {
-    await client.connect();
-    const db = client.db(dbName);
-    log.isDebugEnabled &&
-        log.debug("Connected successfully to server");
-    const collection = db.collection(colName);
-    return await handle(collection);
-}
-async function findMany(chainId: number, brokerName: string, confirmTime: number) {
+
+async function findMany(chainId: number, brokerName: string, confirmTime: number): Promise<any[]> {
     // broker-name/chainId/confirmTime
-    let res = [];
-    try {
-        let cursor = await find(async col => {
-            return await col.find({ 'borkerName': brokerName, 'chainId': chainId, 'confirmTime': confirmTime });
+    return new Promise((resolve, _) => {
+        FIFO.push(async col => {
+            let cursor = await col.find({ 'borkerName': brokerName, 'chainId': chainId, 'confirmTime': confirmTime });
+            let res = [];
+            while (await cursor.hasNext()) {
+                let doc = await cursor.next();
+                res.push(doc);
+            }
+            resolve(res);
         });
-        while (await cursor.hasNext()) {
-            let doc = await cursor.next();
-            res.push(doc);
-        }
-    } catch (err) {
-        log.error("mongodb error: find - ", err);
-    } finally {
-        log.isDebugEnabled &&
-            log.debug("mongodb client close");
-        client.close();
-    }
-    return res;
+    });
 }
 
 export {
