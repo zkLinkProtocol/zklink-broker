@@ -2,7 +2,7 @@
 pragma solidity ^0.6.12;
 
 contract zkLink {
-    mapping(uint16 => address) public tokenAddresses;
+    
 
     function accept(
         address accepter,

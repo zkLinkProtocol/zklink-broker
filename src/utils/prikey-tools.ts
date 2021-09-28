@@ -3,15 +3,20 @@ import path from 'path';
 import fs from 'fs';
 import { providers } from "../conf";
 import zkLink from "../../build/zkLink.json"
+import Governance from "../../build/Governance.json"
+import MockErc20 from "../../build/MockErc20.json"
+import GovernanceAddress from "../../conf/governance_address.json"
 import BrokerAccepter from "../../build/BrokerAccepter.json"
-import secret from "../../secret.json"
-import AccepterContractAddress from '../../accepter_contract_address.json'
+import secret from "../../conf/secret.json"
+import AccepterContractAddress from '../../conf/accepter_contract_address.json'
 import { deployContract } from "ethereum-waffle"
-import contract_addrss from "../../contract_address.json"
+import contract_addrss from "../../conf/contract_address.json"
 import { Contract, Wallet, BigNumber } from "ethers"
 import { formatEther, parseEther } from '@ethersproject/units';
 import { Command, Option } from 'commander';
 import isNumber from 'is-number'
+import AsciiTable from 'ascii-table'
+
 const program = new Command();
 program.version('0.0.1');
 let myParseInt = (val) => {
@@ -88,21 +93,32 @@ program.parse();
 async function list(networkName: string, filenames: Array<string>, tokenId: number) {
     let accepter = AccepterContractAddress[networkName];// secret['accepter-addr'];
     let zkLinkContract = new Contract(contract_addrss[networkName], JSON.stringify(zkLink.abi), providers[networkName]);
-    console.log("Accepter : ", accepter);
-    let tokenAddress = await zkLinkContract.tokenAddresses(tokenId);
-    console.log("tokenAddress : ", tokenAddress);
-    console.log(["Signer Addr", "Gas Coin Balance", "Broker Allowance"])
-    filenames
-        .map(async (v, _) => {
-            let key = fs.readFileSync(v);
-            let wallet = new Wallet(key.toString(), providers[networkName]);
-            let balance = await wallet.getBalance();
-            let allowanceAmount = await zkLinkContract.brokerAllowance(tokenId, accepter, wallet.address);
-
-            // let pendingBalance = await zkLinkContract.getPendingBalance()
-            return [wallet.address, formatEther(balance), formatEther(allowanceAmount)]
-        })
-        .every(async v => console.log(await v));
+    let governanceContract = new Contract(GovernanceAddress[networkName], JSON.stringify(Governance.abi), providers[networkName]);
+    let tokenAddress = await governanceContract.tokenAddresses(tokenId);
+    let ERC20Contract = new Contract(tokenAddress, JSON.stringify(MockErc20.abi), providers[networkName]);
+    let pendingBalance = await zkLinkContract.getPendingBalance(accepter, tokenAddress);
+    let allownance = await ERC20Contract.allowance(accepter, contract_addrss[networkName]);
+    let accpeterTable = new AsciiTable("Accepter Info");
+    accpeterTable.addRow('Accepter Contract Address', accepter);
+    accpeterTable.addRow('Token Contract Address', tokenAddress);
+    accpeterTable.addRow('Token Name', await ERC20Contract.name());
+    accpeterTable.addRow('Token Symbol', await ERC20Contract.symbol());
+    accpeterTable.addRow('Balance', formatEther(await ERC20Contract.balanceOf(accepter)));
+    accpeterTable.addRow('Allownance', formatEther(allownance));
+    accpeterTable.addRow('PendingBalance', formatEther(pendingBalance));
+    console.log(accpeterTable.toString())
+    var table = new AsciiTable()
+    table.setHeading('Signer Addr', 'Gas Coin Balance', 'Broker Allowance');
+    Promise.all(filenames.map(async (v, _) => {
+        let key = fs.readFileSync(v);
+        let wallet = new Wallet(key.toString(), providers[networkName]);
+        let balance = await wallet.getBalance();
+        let allowanceAmount = await zkLinkContract.brokerAllowance(tokenId, accepter, wallet.address);
+        let arr = [wallet.address, formatEther(balance), formatEther(allowanceAmount)];
+        table.addRow.apply(table, arr);
+    })).then(() => {
+        console.log(table.toString());
+    })
 }
 
 function create(keysPath: string, keysCount: number) {
@@ -122,7 +138,7 @@ async function batchApprove(networkName: string, spenders: Array<string>, tokenI
     console.log(spenders);
     let batch = new Contract(AccepterContractAddress[networkName], JSON.stringify(BrokerAccepter.abi), accepterOwner);
     let gasLimit = spenders.length * 50000;
-    let tx = await batch.connect(accepterOwner).batchApprove(contract_addrss[networkName], spenders, tokenId, BigNumber.from("0xffffffffffffffffffffffffffffffff"), { gasLimit: gasLimit })
+    let tx = await batch.connect(accepterOwner).batchApprove(contract_addrss[networkName], GovernanceAddress[networkName], spenders, tokenId, BigNumber.from("0xffffffffffffffffffffffffffffffff"), { gasLimit: gasLimit })
     console.log(tx);
 }
 

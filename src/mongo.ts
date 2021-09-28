@@ -1,5 +1,5 @@
 import { MongoClient } from 'mongodb';
-import secret from "../secret.json"
+import secret from "../conf/secret.json"
 import { BrokerData } from './BrokerData';
 import { getLogger } from "./log4js";
 const log = getLogger("mongo-log");
