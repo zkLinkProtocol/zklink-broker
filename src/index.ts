@@ -4,7 +4,7 @@ import Router from 'koa-router';
 import bodyParser from 'koa-bodyparser';
 const app = new Koa();
 const router = new Router();
-import secret from "../secret.json"
+import secret from "../conf/secret.json"
 import { getLogger } from "./log4js";
 const loggerAccept = getLogger();// categorie: broker-accept
 import { accept } from './broker';

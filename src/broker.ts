@@ -1,12 +1,12 @@
 import { providers, networkMap, tokenContractMap } from "./conf";
 import { Contract, Wallet, utils } from "ethers"
-import secret from "../secret.json"
-import contract_addrss from "../contract_address.json"
-import zkLink from "./zkLink.json"
+import secret from "../conf/secret.json"
+import contract_addrss from "../conf/contract_address.json"
+import zkLink from "../build/zkLink.json"
 import { getSigner } from "./signer";
 import { insertBrokerData, updateConfirmTime, updateNonceAndTxId, findMany } from "./mongo";
 import { TransactionRequest } from "@ethersproject/providers";
-import AccepterContractAddress from "../accepter_contract_address.json"
+import AccepterContractAddress from "../conf/accepter_contract_address.json"
 import { getLogger } from "./log4js";
 import { BrokerData } from "./BrokerData";
 import { keccak256 } from "ethers/lib/utils";

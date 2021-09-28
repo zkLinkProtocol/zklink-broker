@@ -1,4 +1,4 @@
-import secret from "../secret.json"
+import secret from "../conf/secret.json"
 import { promisify } from 'util'
 import { readFile as _readFile, readdir as _readdir } from 'fs'
 import path from 'path'
