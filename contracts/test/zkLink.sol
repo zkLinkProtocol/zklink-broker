@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 
-interface zkLink {
+contract zkLink {
+    mapping(uint16 => address) public tokenAddresses;
+
     function accept(
         address accepter,
         address receiver,
@@ -9,18 +11,29 @@ interface zkLink {
         uint128 amount,
         uint16 withdrawFee,
         uint32 nonce
-    ) external payable;
+    ) external payable {}
 
     function getPendingBalance(address _address, address _token)
-        external
+        public
         view
-        returns (uint128);
+        returns (uint128)
+    {
+        return 0;
+    }
 
-    function tokenAddresses(uint16 tokenId) external view returns (address);
+    function brokerAllowance(
+        uint16 tokenId,
+        address owner,
+        address spender
+    ) public view returns (uint128) {
+        return 0;
+    }
 
     function brokerApprove(
         uint16 tokenId,
         address spender,
         uint128 amount
-    ) external returns (bool);
+    ) external returns (bool) {
+        return true;
+    }
 }

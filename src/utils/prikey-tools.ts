@@ -2,7 +2,7 @@ let Accounts = require('web3-eth-accounts');
 import path from 'path';
 import fs from 'fs';
 import { providers } from "../conf";
-import zkLink from "../zkLink.json"
+import zkLink from "../../build/zkLink.json"
 import BrokerAccepter from "../../build/BrokerAccepter.json"
 import secret from "../../secret.json"
 import AccepterContractAddress from '../../accepter_contract_address.json'
@@ -87,17 +87,19 @@ program.parse();
 
 async function list(networkName: string, filenames: Array<string>, tokenId: number) {
     let accepter = AccepterContractAddress[networkName];// secret['accepter-addr'];
+    let zkLinkContract = new Contract(contract_addrss[networkName], JSON.stringify(zkLink.abi), providers[networkName]);
     console.log("Accepter : ", accepter);
+    let tokenAddress = await zkLinkContract.tokenAddresses(tokenId);
+    console.log("tokenAddress : ", tokenAddress);
     console.log(["Signer Addr", "Gas Coin Balance", "Broker Allowance"])
     filenames
         .map(async (v, _) => {
             let key = fs.readFileSync(v);
-            console.log(key);
             let wallet = new Wallet(key.toString(), providers[networkName]);
             let balance = await wallet.getBalance();
-
-            let zkLinkContract = new Contract(contract_addrss[networkName], JSON.stringify(zkLink.abi), wallet);
             let allowanceAmount = await zkLinkContract.brokerAllowance(tokenId, accepter, wallet.address);
+
+            // let pendingBalance = await zkLinkContract.getPendingBalance()
             return [wallet.address, formatEther(balance), formatEther(allowanceAmount)]
         })
         .every(async v => console.log(await v));
