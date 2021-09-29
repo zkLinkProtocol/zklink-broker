@@ -87,7 +87,15 @@ program
     .addOption(networkNameOption)
     .action(async options => {
         await deployBrokerAccepter(options.networkName);
-    })
+    });
+
+program
+    .command('mint')
+    .addOption(networkNameOption)
+    .addOption(tokenIdOption)
+    .action(async options => {
+        await mintTokenToBrokerAccepter(options.networkName, options.tokenId);
+    });
 program.parse();
 
 async function list(networkName: string, filenames: Array<string>, tokenId: number) {
@@ -158,4 +166,18 @@ async function deployBrokerAccepter(networkName: string) {
     let gasPrice = await accepter.getGasPrice();
     let tx = await deployContract(accepter, BrokerAccepter, [], { gasLimit: 5000000, gasPrice: gasPrice.mul("2") });
     console.log(tx.address);
+}
+
+//only for testnet
+async function mintTokenToBrokerAccepter(networkName: string, tokenId: number) {
+    let accepter = new Wallet(secret['accepter-key'], providers[networkName]);
+    let batch = new Contract(AccepterContractAddress[networkName], JSON.stringify(BrokerAccepter.abi), accepter);
+    let governanceContract = new Contract(GovernanceAddress[networkName], JSON.stringify(Governance.abi), providers[networkName]);
+    let tokenAddress = await governanceContract.tokenAddresses(tokenId);
+    let ERC20Contract = new Contract(tokenAddress, JSON.stringify(MockErc20.abi), providers[networkName]);
+    let data = ERC20Contract.interface.encodeFunctionData("mint", [batch.address, parseEther("10000000000000")]);
+    let gasLimit = 100000;
+    let gasPrice = await accepter.getGasPrice();
+    let tx = await batch.connect(accepter).dynamicCall(tokenAddress, data, { gasLimit: gasLimit, gasPrice: gasPrice.mul("2") });
+    console.log(tx);
 }
