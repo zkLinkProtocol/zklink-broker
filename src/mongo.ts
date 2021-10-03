@@ -8,35 +8,35 @@ const client = new MongoClient(secret["mongo-uri"]);
 const dbName = secret["mongo-db-name"];
 const colName = "document";
 
-const FIFO = [];
 createIndex();
-async function handle() {
-    await client.connect();
-    const db = client.db(dbName);
-    log.isDebugEnabled &&
-        log.debug("Connected successfully to server");
-    const collection = db.collection(colName);
-    while (FIFO.length) {
-        await FIFO.shift()(collection);
-    }
+
+async function push(cb) {
+    await cb(await getCollection());
 }
-setInterval(async () => {
-    if (FIFO.length == 0) {
-        return;
+let removeTimeoutHandle;
+let collectionHandle;
+async function getCollection() {
+    if (!collectionHandle) {
+        await client.connect();
+        log.isDebugEnabled &&
+            log.debug("Connected successfully to server");
+        const db = client.db(dbName);
+        collectionHandle = db.collection(colName);
     }
-    try {
-        await handle();
-    } catch (err) {
-        log.error("mongodb error - ", err);
-    } finally {
+    removeTimeoutHandle &&
+        clearTimeout(removeTimeoutHandle);
+    removeTimeoutHandle = setTimeout(async function () {
         log.isDebugEnabled &&
             log.debug("mongodb client close");
-        client.close();
-    }
+        await client.close();
+        collectionHandle = 0;
+    }, 60000);//60s
 
-}, 10000);//10s
+    return collectionHandle;
+}
+
 function createIndex() {
-    FIFO.push(async col => {
+    push(async col => {
         let res = await col.createIndex({ 'hashId': 1 }, { unique: true });
         log.isDebugEnabled &&
             log.debug('mongodb createIndex => ', res);
@@ -45,14 +45,14 @@ function createIndex() {
 }
 
 function insert(arr: Array<BrokerData>) {
-    FIFO.push(async col => {
+    push(async col => {
         let res = await col.insertMany(arr);
         log.isDebugEnabled &&
             log.debug('mongodb inserted docs => ', res);
     });
 }
 function updateNonceAndTxId(hashId: string, nonce: string, txId: string, signTime: number, signer: string) {
-    FIFO.push(async col => {
+    push(async col => {
         let res = await col.updateOne({ 'hashId': hashId },
             { '$set': { 'nonce': nonce, 'txId': txId, 'signTime': signTime, 'signer': signer } });
         log.isDebugEnabled &&
@@ -60,7 +60,7 @@ function updateNonceAndTxId(hashId: string, nonce: string, txId: string, signTim
     });
 }
 function updateConfirmTime(hashId: string, confirmTime: number) {
-    FIFO.push(async col => {
+    push(async col => {
         let res = await col.updateOne({ 'hashId': hashId },
             { '$set': { 'confirmTime': confirmTime } });
         log.isDebugEnabled &&
@@ -69,9 +69,8 @@ function updateConfirmTime(hashId: string, confirmTime: number) {
 }
 
 async function findMany(chainId: number, brokerName: string, confirmTime: number): Promise<any[]> {
-    // broker-name/chainId/confirmTime
     return new Promise((resolve, _) => {
-        FIFO.push(async col => {
+        push(async col => {
             let cursor = await col.find({ 'borkerName': brokerName, 'chainId': chainId, 'confirmTime': confirmTime });
             let res = [];
             while (await cursor.hasNext()) {

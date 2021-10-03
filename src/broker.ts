@@ -47,7 +47,6 @@ async function accept(chainId: number, receiver: string, tokenId: number, amount
         accepter);
     //step1
     insertBrokerData([data]);
-
     /// TODO maybe we should check whether the balance of wallet is enough
 
     let zkLinkContract = new Contract(contract_addrss[networkName], JSON.stringify(zkLink.abi), wallet);

@@ -21,7 +21,6 @@ async function main() {
         }
     });
 
-
     app.use(bodyParser())
     router.post('/accept', async (ctx: Context) => {
         let { chain_id, receiver, token_id, amount, withdrawFee, nonce } = ctx.request.body;
