@@ -26,9 +26,9 @@ async function main() {
         let { chain_id, receiver, token_id, amount, withdrawFee, nonce } = ctx.request.body;
         receiver = hexlify(receiver, { allowMissingPrefix: true });
         loggerAccept.info(chain_id, receiver, token_id, amount, withdrawFee, nonce);
-        await accept(Number(chain_id), receiver, Number(token_id), amount, Number(withdrawFee), Number(nonce));
+        let txId = await accept(Number(chain_id), receiver, Number(token_id), amount, Number(withdrawFee), Number(nonce));
 
-        ctx.response.body = { result: true, errorMsg: "OK" };
+        ctx.response.body = { result: true, errorMsg: "OK", data: {txId: txId}};
     });
 
     app.use(router.routes());

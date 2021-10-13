@@ -7,14 +7,14 @@ const client = new MongoClient(secret["mongo-uri"]);
 //, { useNewUrlParser: true, useUnifiedTopology: true }Î
 const dbName = secret["mongo-db-name"];
 const colName = "document";
-
+let removeTimeoutHandle = null;
+let collectionHandle = null;
 createIndex();
 
 async function push(cb) {
     await cb(await getCollection());
 }
-let removeTimeoutHandle;
-let collectionHandle;
+
 async function getCollection() {
     if (!collectionHandle) {
         await client.connect();

@@ -29,7 +29,7 @@ async function accept(chainId: number, receiver: string, tokenId: number, amount
     let networkName: string = networkMap[chainId];
     if (!networkName) {
         loggerAccept.error("Broker: Error, network name not exist. chainId: %d", chainId);
-        return;
+        return "";
     }
 
     let wallet = new Wallet(getSigner(chainId), providers[networkName]);
@@ -71,13 +71,16 @@ async function accept(chainId: number, receiver: string, tokenId: number, amount
     let txId = keccak256(rawTx);
     data.nonce = tx.nonce.toString();
     data.txId = txId;
-    //step4
-    updateNonceAndTxId(data.hashId, data.nonce, data.txId, Date.now(), wallet.address);
-
-    //step5
-    let res = await wallet.provider.sendTransaction(rawTx);
-
-    loggerBrokerSuccess.info(res);
+    
+    //modfiy @2021.10.13 setImmediate
+    setImmediate(async ()=>{
+        //step4
+        updateNonceAndTxId(data.hashId, data.nonce, data.txId, Date.now(), wallet.address);
+        //step5
+        let res = await wallet.provider.sendTransaction(rawTx);
+        loggerBrokerSuccess.info(res);
+    });
+    return txId;
 }
 
 //check process
