@@ -7,7 +7,7 @@ const router = new Router();
 import secret from "../conf/secret.json"
 import { getLogger } from "./log4js";
 const loggerAccept = getLogger();// categorie: broker-accept
-import { accept } from './broker';
+import { accept,acceptQuickSwap } from './broker';
 import { initSigner } from './signer'
 import { hexlify } from 'ethers/lib/utils';
 
@@ -27,6 +27,14 @@ async function main() {
         receiver = hexlify(receiver, { allowMissingPrefix: true });
         loggerAccept.info(chain_id, receiver, token_id, amount, withdrawFee, nonce);
         let txId = await accept(Number(chain_id), receiver, Number(token_id), amount, Number(withdrawFee), Number(nonce));
+
+        ctx.response.body = { result: true, errorMsg: "OK", data: {txId: txId}};
+    });
+    router.post('/accept_quick_swap', async (ctx: Context) => {
+        let { chain_id, receiver, token_id, amount, acceptTokenId,acceptAmountOutMin, nonce } = ctx.request.body;
+        receiver = hexlify(receiver, { allowMissingPrefix: true });
+        loggerAccept.info(chain_id, receiver, token_id, amount, acceptTokenId,acceptAmountOutMin, nonce);
+        let txId = await acceptQuickSwap(Number(chain_id), receiver, Number(token_id), amount, Number(acceptTokenId),acceptAmountOutMin, Number(nonce));
 
         ctx.response.body = { result: true, errorMsg: "OK", data: {txId: txId}};
     });

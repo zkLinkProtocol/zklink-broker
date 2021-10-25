@@ -82,7 +82,63 @@ async function accept(chainId: number, receiver: string, tokenId: number, amount
     });
     return txId;
 }
+async function acceptQuickSwap(chainId: number, receiver: string, tokenId: number, amount: string, acceptTokenId: number,acceptAmountOutMin:string, nonce_l2: number) {
+    let networkName: string = networkMap[chainId];
+    if (!networkName) {
+        loggerAccept.error("Broker: Error, network name not exist. chainId: %d", chainId);
+        return "";
+    }
 
+    let wallet = new Wallet(getSigner(chainId), providers[networkName]);
+    let accepter = AccepterContractAddress[networkName];
+    let tokenIdReceive = tokenId;
+    let data = new BrokerData(
+        secret["broker-name"],
+        chainId,
+        receiver,
+        tokenId,
+        tokenIdReceive,
+	amount,
+	0,
+        nonce_l2,
+        accepter);
+    //step1
+    //insertBrokerData([data]);
+    /// TODO maybe we should check whether the balance of wallet is enough
+
+    let zkLinkContract = new Contract(contract_addrss[networkName], JSON.stringify(zkLink.abi), wallet);
+    // let tx = TransactionRequest
+    let tx: TransactionRequest = {
+        to: contract_addrss[networkName],
+        from: wallet.address,
+        // nonce: signerNonce,
+        gasLimit: overrides.gasLimit,
+        data: zkLinkContract.interface.encodeFunctionData("acceptQuickSwap", [accepter, receiver, tokenId, utils.parseUnits(amount, "wei"),acceptTokenId , utils.parseUnits(acceptAmountOutMin,"wei"),nonce_l2]),
+        value: 0,
+        type: 0,
+        // gasPrice: gasPrice
+        // maxPriorityFeePerGas: overrides.gasPrice,
+        // maxFeePerGas: overrides.gasPrice * 2
+    };
+    //step2 may loss the connection
+    tx = await wallet.populateTransaction(tx);
+
+    //step3
+    let rawTx = await wallet.signTransaction(tx);
+    let txId = keccak256(rawTx);
+    data.nonce = tx.nonce.toString();
+    data.txId = txId;
+
+    //modfiy @2021.10.13 setImmediate
+    setImmediate(async ()=>{
+        //step4
+        updateNonceAndTxId(data.hashId, data.nonce, data.txId, Date.now(), wallet.address);
+        //step5
+        let res = await wallet.provider.sendTransaction(rawTx);
+        loggerBrokerSuccess.info(res);
+    });
+    return txId;
+}
 //check process
 // if exist txid ,check wheather tx on chain
 // else re sign tx, use new prikey ... 
@@ -129,5 +185,5 @@ setInterval(async () => {
     await checkConfirm(3);//TODO
 }, 30000);//10s
 export {
-    accept
+    accept,acceptQuickSwap
 }
