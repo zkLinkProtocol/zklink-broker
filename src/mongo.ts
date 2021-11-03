@@ -31,7 +31,6 @@ async function getCollection() {
         await client.close();
         collectionHandle = 0;
     }, 60000);//60s
-
     return collectionHandle;
 }
 
@@ -44,19 +43,57 @@ function createIndex() {
     });
 }
 
-function insert(arr: Array<BrokerData>) {
-    push(async col => {
-        let res = await col.insertMany(arr);
-        log.isDebugEnabled &&
-            log.debug('mongodb inserted docs => ', res);
+async function insert(arr: Array<BrokerData>) {
+    return new Promise((resolve, reject) => {
+        push(async col => {
+            try {
+                let res = await col.insertMany(arr);
+                if (res.insertedCount == 1) {
+                    resolve({});
+                }
+                log.isDebugEnabled &&
+                    log.debug('mongodb inserted docs => ', res);
+            } catch (err) {
+                reject(err);
+                log.error('mongodb inserted error => ', err);
+            }
+        });
     });
 }
-function updateNonceAndTxId(hashId: string, nonce: string, txId: string, signTime: number, signer: string) {
-    push(async col => {
-        let res = await col.updateOne({ 'hashId': hashId },
-            { '$set': { 'nonce': nonce, 'txId': txId, 'signTime': signTime, 'signer': signer } });
-        log.isDebugEnabled &&
-            log.debug('mongodb update', res);
+async function findByHashId(hashId: string) {
+    return new Promise((resolve, reject) => {
+        push(async col => {
+            try {
+                let cursor = await col.find({ 'hashId': hashId });
+                if (await cursor.hasNext()) {
+                    resolve(await cursor.next());
+                }
+            } catch (err) {
+                reject(err);
+            }
+        });
+    });
+}
+async function updateNonceAndTxIdForce(hashId: string, nonce: string, txId: string, signTime: number, signer: string) {
+    return _updateNonceAndTxId(hashId, nonce, txId, signTime, signer, { 'hashId': hashId })
+}
+async function updateNonceAndTxId(hashId: string, nonce: string, txId: string, signTime: number, signer: string) {
+    return _updateNonceAndTxId(hashId, nonce, txId, signTime, signer, { 'hashId': hashId, signTime: { '$eq': 0 } })
+}
+async function _updateNonceAndTxId(hashId: string, nonce: string, txId: string, signTime: number, signer: string, coindition: object) {
+    return new Promise((resolve, reject) => {
+        push(async col => {
+            try {
+                let res = await col.updateOne(coindition,
+                    { '$set': { 'nonce': nonce, 'txId': txId, 'signTime': signTime, 'signer': signer } });
+                resolve(res.modifiedCount == 1);
+                log.isDebugEnabled &&
+                    log.debug('mongodb update', res);
+            } catch (err) {
+                reject(err);
+                log.error('mongodb update error', err);
+            }
+        });
     });
 }
 function updateConfirmTime(hashId: string, confirmTime: number) {
@@ -64,7 +101,7 @@ function updateConfirmTime(hashId: string, confirmTime: number) {
         let res = await col.updateOne({ 'hashId': hashId },
             { '$set': { 'confirmTime': confirmTime } });
         log.isDebugEnabled &&
-            log.debug('mongodb update', res);
+            log.debug('mongodb update confirm time', res);
     });
 }
 
@@ -86,5 +123,7 @@ export {
     insert as insertBrokerData,
     updateConfirmTime,
     updateNonceAndTxId,
-    findMany
+    updateNonceAndTxIdForce,
+    findMany,
+    findByHashId
 }

@@ -1,3 +1,4 @@
+
 module.exports = {
   apps: [{
     interpreter: './node_modules/.bin/ts-node',
@@ -10,7 +11,7 @@ module.exports = {
       NODE_ENV: 'production'
     },
     kill_timeout: 10000,
-    name: 'broker-server',
+    name: 'broker#' + process.cwd(),
     script: './src/index.ts',
     wait_ready: true,
     watch: false,

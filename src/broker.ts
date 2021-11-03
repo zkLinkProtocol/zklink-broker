@@ -1,10 +1,10 @@
-import { providers, networkMap, tokenContractMap } from "./conf";
+import { providers, networkMap } from "./conf";
 import { Contract, Wallet, utils } from "ethers"
 import secret from "../conf/secret.json"
 import contract_addrss from "../conf/contract_address.json"
 import zkLink from "../build/zkLink.json"
 import { getSigner } from "./signer";
-import { insertBrokerData, updateConfirmTime, updateNonceAndTxId, findMany } from "./mongo";
+import { insertBrokerData, updateConfirmTime, updateNonceAndTxId, findMany, findByHashId, updateNonceAndTxIdForce } from "./mongo";
 import { TransactionRequest } from "@ethersproject/providers";
 import AccepterContractAddress from "../conf/accepter_contract_address.json"
 import { getLogger } from "./log4js";
@@ -25,11 +25,25 @@ const overrides = {
 //step3 ,update nonce/txid to mongodb
 //step4 ,send rawTx, sendTransaction
 
+/**
+ * update@ 3 Nov 2021.
+ * 1. accept func can be recall.
+ * 2. the returned txid may change. 
+ *      especially, populateTransaction wasinterrupted because of network timeout
+ *      or
+ *      the tx gasPrice is too low, wait time exceeds RESEND_PERIOD_TIME.
+ * @param chainId 
+ * @param receiver 
+ * @param tokenId 
+ * @param amount 
+ * @param withdrawFee 
+ * @param nonce_l2 
+ * @returns txid
+ */
 async function accept(chainId: number, receiver: string, tokenId: number, amount: string, withdrawFee: number, nonce_l2: number) {
     let networkName: string = networkMap[chainId];
     if (!networkName) {
-        loggerAccept.error("Broker: Error, network name not exist. chainId: %d", chainId);
-        return "";
+        throw "chainId not exist, chainId: " + chainId
     }
 
     let wallet = new Wallet(getSigner(chainId), providers[networkName]);
@@ -45,47 +59,67 @@ async function accept(chainId: number, receiver: string, tokenId: number, amount
         withdrawFee,
         nonce_l2,
         accepter);
-    //step1
-    insertBrokerData([data]);
-    /// TODO maybe we should check whether the balance of wallet is enough
+    try {
+        await insertBrokerData([data]);
+    } catch (err) {
+        // find if it already exist 
+        let doc = await findByHashId(data.hashId);
+        let res = doc as BrokerData;
+        if (res.txId) {
+            return res.txId;
+        } else {
+            throw "insert occurs some error";
+        }
+    }
+    let { rawTx: rawTx, txId: txId, nonce: nonce }
+        = await sign(networkName, wallet, accepter, receiver, tokenId, amount, withdrawFee, nonce_l2);
 
+    let result = await updateNonceAndTxId(data.hashId, nonce, txId, Date.now(), wallet.address);
+
+    if (result) {
+        setImmediate(async () => {
+            let res = await wallet.provider.sendTransaction(rawTx);
+            loggerBrokerSuccess.info(res);
+        });
+    } else {
+        loggerAccept.error("updateNonceAndTxId already exist: hashId = ", data.hashId);
+        throw "updateNonceAndTxId error"
+    }
+
+    return txId;
+}
+
+async function sign(networkName: string, wallet: Wallet, accepter: string, receiver: string, tokenId: number, amount: string, withdrawFee: number, nonce_l2: number) {
     let zkLinkContract = new Contract(contract_addrss[networkName], JSON.stringify(zkLink.abi), wallet);
-    // let tx = TransactionRequest
     let tx: TransactionRequest = {
         to: contract_addrss[networkName],
         from: wallet.address,
-        // nonce: signerNonce,
         gasLimit: overrides.gasLimit,
         data: zkLinkContract.interface.encodeFunctionData("accept", [accepter, receiver, tokenId, utils.parseUnits(amount, "wei"), withdrawFee, nonce_l2]),
         value: 0,
         type: 0,
-        // gasPrice: gasPrice
-        // maxPriorityFeePerGas: overrides.gasPrice,
-        // maxFeePerGas: overrides.gasPrice * 2
     };
+
     //step2 may loss the connection
     tx = await wallet.populateTransaction(tx);
 
-    //step3
     let rawTx = await wallet.signTransaction(tx);
     let txId = keccak256(rawTx);
-    data.nonce = tx.nonce.toString();
-    data.txId = txId;
-    
-    //modfiy @2021.10.13 setImmediate
-    setImmediate(async ()=>{
-        //step4
-        updateNonceAndTxId(data.hashId, data.nonce, data.txId, Date.now(), wallet.address);
-        //step5
-        let res = await wallet.provider.sendTransaction(rawTx);
-        loggerBrokerSuccess.info(res);
-    });
-    return txId;
+    return { rawTx: rawTx, txId: txId, nonce: tx.nonce.toString() };
 }
 
 //check process
-// if exist txid ,check wheather tx on chain
-// else re sign tx, use new prikey ... 
+/*
+0. hashid, insert
+1. signTime & txid updated
+3. confirmTime updated
+
+action:
+0 | 1 -> 3
+0 -> 1 | 1 | ... | 1 -> 3
+*/
+const RESEND_PERIOD_TIME = 10 * 60 * 1000;// 5 * 60 * 1000  5min
+const BLOCK_CONFIRM_NUMBER = 6;
 async function checkConfirm(chainId: number) {
     let networkName: string = networkMap[chainId];
     if (!networkName) {
@@ -93,41 +127,50 @@ async function checkConfirm(chainId: number) {
         return;
     }
     let provider = providers[networkName];
-
+    let wallet = new Wallet(getSigner(chainId), providers[networkName]);
     // query chainId= && brokerName= && confirmTime == 0  
     let arr = await findMany(chainId, secret["broker-name"], 0);
     arr.forEach(async doc => {
         let data = doc as BrokerData;
-        let receipt = await provider.getTransactionReceipt(data.txId);
-        if (receipt && receipt.confirmations > 12) {
-            updateConfirmTime(data.hashId, Date.now());
-            return;
-        }
-
+        let updateFuncHandle = null;
         if (data.signTime == 0) {
-            // TODO resign
-            // It's almost impossible to happen.
-            // If it happens, it must be because of the network
-
+            //resign and send tx
+            updateFuncHandle = updateNonceAndTxId;// if sign is interrupted , where signTime == 0
+        } else if (data.signTime != 0 && data.txId) {
+            // check if tx onchain
+            let receipt = await provider.getTransactionReceipt(data.txId);
+            if (receipt) {
+                if (receipt.confirmations > BLOCK_CONFIRM_NUMBER) {
+                    updateConfirmTime(data.hashId, Date.now());
+                }
+            } else if (data.confirmTime == 0 && (Date.now() - data.signTime > RESEND_PERIOD_TIME)) {
+                updateFuncHandle = updateNonceAndTxIdForce;// does not require signTime equal 0
+            }
         }
 
-        //TODO different chain different deadline
-        if (Date.now() - data.signTime > 3 * 60 * 1000) {
-            // resign
-            // getSigner, populateTransactio, sign
-            // updateNonceAndTxId
+        if (updateFuncHandle) {
+            setImmediate(async () => {
+                let { rawTx: rawTx, txId: txId, nonce: nonce } =
+                    await sign(networkName, wallet, data.accepter, data.receiver,
+                        data.tokenId, data.amount, data.withdrawFee, data.nonce_l2);
+                let result = await updateFuncHandle(data.hashId, nonce, txId, Date.now(), wallet.address);
+                if (result) {
+                    let res = await wallet.provider.sendTransaction(rawTx);
+                    loggerBrokerSuccess.info(res);
+                } else {
+                    loggerAccept.error("updateNonceAndTxId already exist: hashId = ", data.hashId);
+                }
+            });
         }
-
-
-    })
+    });
 }
 
 setInterval(async () => {
-    await checkConfirm(0);//TODO
-    await checkConfirm(1);//TODO
-    await checkConfirm(2);//TODO
-    await checkConfirm(3);//TODO
-}, 30000);//10s
+    await checkConfirm(0);
+    await checkConfirm(1);
+    await checkConfirm(2);
+    await checkConfirm(3);
+}, 10000);//10s
 export {
     accept
 }
