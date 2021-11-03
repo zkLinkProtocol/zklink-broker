@@ -8,8 +8,9 @@ import { insertBrokerData, updateConfirmTime, updateNonceAndTxId, findMany, find
 import { TransactionRequest } from "@ethersproject/providers";
 import AccepterContractAddress from "../conf/accepter_contract_address.json"
 import { getLogger } from "./log4js";
-import { BrokerData } from "./BrokerData";
+import { BrokerData, AcceptTypeEnum } from "./BrokerData";
 import { keccak256 } from "ethers/lib/utils";
+import { assert } from "console";
 const loggerAccept = getLogger();// categorie: broker-accept
 const loggerBrokerSuccess = getLogger("broker-success");
 
@@ -29,18 +30,28 @@ const overrides = {
  * update@ 3 Nov 2021.
  * 1. accept func can be recall.
  * 2. the returned txid may change. 
- *      especially, populateTransaction wasinterrupted because of network timeout
+ *      especially, populateTransaction was interrupted because of network timeout
  *      or
  *      the tx gasPrice is too low, wait time exceeds RESEND_PERIOD_TIME.
+ * 
+ * if typeof feeOrAmountOutMin = string, solidity call `acceptQuickSwap`
+ * if typeof feeOrAmountOutMin = number, solidity call `accept`
  * @param chainId 
  * @param receiver 
  * @param tokenId 
  * @param amount 
- * @param withdrawFee 
+ * @param feeOrAmountOutMin 
  * @param nonce_l2 
  * @returns txid
  */
-async function accept(chainId: number, receiver: string, tokenId: number, amount: string, withdrawFee: number, nonce_l2: number) {
+async function accept(acceptType: AcceptTypeEnum, chainId: number, receiver: string, tokenId: number, amount: string, tokenIdReceive: number, feeOrAmountOutMin: number | string, nonce_l2: number) {
+    // assert
+    if (acceptType == AcceptTypeEnum.Accept) {
+        assert(typeof feeOrAmountOutMin == 'number', 'AcceptTypeEnum Error')
+    } else {
+        assert(typeof feeOrAmountOutMin == 'string', 'AcceptTypeEnum Error')
+    }
+
     let networkName: string = networkMap[chainId];
     if (!networkName) {
         throw "chainId not exist, chainId: " + chainId
@@ -48,15 +59,16 @@ async function accept(chainId: number, receiver: string, tokenId: number, amount
 
     let wallet = new Wallet(getSigner(chainId), providers[networkName]);
     let accepter = AccepterContractAddress[networkName];
-    let tokenIdReceive = tokenId;
+    // let tokenIdReceive = tokenId;
     let data = new BrokerData(
+        acceptType,
         secret["broker-name"],
         chainId,
         receiver,
         tokenId,
         tokenIdReceive,
         amount,
-        withdrawFee,
+        feeOrAmountOutMin,
         nonce_l2,
         accepter);
     try {
@@ -72,7 +84,7 @@ async function accept(chainId: number, receiver: string, tokenId: number, amount
         }
     }
     let { rawTx: rawTx, txId: txId, nonce: nonce }
-        = await sign(networkName, wallet, accepter, receiver, tokenId, amount, withdrawFee, nonce_l2);
+        = await sign(acceptType, networkName, wallet, accepter, receiver, tokenId, amount, tokenIdReceive, feeOrAmountOutMin, nonce_l2);
 
     let result = await updateNonceAndTxId(data.hashId, nonce, txId, Date.now(), wallet.address);
 
@@ -89,13 +101,22 @@ async function accept(chainId: number, receiver: string, tokenId: number, amount
     return txId;
 }
 
-async function sign(networkName: string, wallet: Wallet, accepter: string, receiver: string, tokenId: number, amount: string, withdrawFee: number, nonce_l2: number) {
+async function sign(acceptType: AcceptTypeEnum, networkName: string, wallet: Wallet, accepter: string, receiver: string, tokenId: number, amount: string, tokenIdReceive: number, feeOrAmountOutMin: number | string, nonce_l2: number) {
     let zkLinkContract = new Contract(contract_addrss[networkName], JSON.stringify(zkLink.abi), wallet);
+    let data;
+    if (acceptType == AcceptTypeEnum.Accept) {
+        data = zkLinkContract.interface.encodeFunctionData("accept",
+            [accepter, receiver, tokenId, utils.parseUnits(amount, "wei"), feeOrAmountOutMin, nonce_l2]);
+    } else {
+        // AcceptTypeEnum.QuickSwapAccept
+        data = zkLinkContract.interface.encodeFunctionData("acceptQuickSwap",
+            [accepter, receiver, tokenId, utils.parseUnits(amount, "wei"), tokenIdReceive, utils.parseUnits(feeOrAmountOutMin.toString(), "wei"), nonce_l2])
+    }
     let tx: TransactionRequest = {
         to: contract_addrss[networkName],
         from: wallet.address,
         gasLimit: overrides.gasLimit,
-        data: zkLinkContract.interface.encodeFunctionData("accept", [accepter, receiver, tokenId, utils.parseUnits(amount, "wei"), withdrawFee, nonce_l2]),
+        data: data,
         value: 0,
         type: 0,
     };
@@ -151,8 +172,8 @@ async function checkConfirm(chainId: number) {
         if (updateFuncHandle) {
             setImmediate(async () => {
                 let { rawTx: rawTx, txId: txId, nonce: nonce } =
-                    await sign(networkName, wallet, data.accepter, data.receiver,
-                        data.tokenId, data.amount, data.withdrawFee, data.nonce_l2);
+                    await sign(data.acceptType, networkName, wallet, data.accepter, data.receiver,
+                        data.tokenId, data.amount, data.tokenIdReceive, data.feeOrAmountOutMin, data.nonce_l2);
                 let result = await updateFuncHandle(data.hashId, nonce, txId, Date.now(), wallet.address);
                 if (result) {
                     let res = await wallet.provider.sendTransaction(rawTx);

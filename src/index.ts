@@ -10,6 +10,7 @@ const loggerAccept = getLogger();// categorie: broker-accept
 import { accept } from './broker';
 import { initSigner } from './signer'
 import { hexlify } from 'ethers/lib/utils';
+import { AcceptTypeEnum } from './BrokerData';
 
 async function main() {
     let signerCount = await initSigner();
@@ -28,12 +29,26 @@ async function main() {
         loggerAccept.info(chain_id, receiver, token_id, amount, withdrawFee, nonce);
 
         try {
-            let txId = await accept(Number(chain_id), receiver, Number(token_id), amount, Number(withdrawFee), Number(nonce));
+            let txId = await accept(AcceptTypeEnum.Accept, Number(chain_id), receiver, Number(token_id), amount, Number(token_id), Number(withdrawFee), Number(nonce));
             ctx.response.body = { result: true, errorMsg: "OK", data: { txId: txId } };
         } catch (err) {
-            ctx.response.body = { result: true, errorMsg: JSON.stringify(err), data: {} };
+            ctx.response.body = { result: false, errorMsg: JSON.stringify(err), data: {} };
             loggerAccept.error(err);
-            // { result: true, errorMsg: "duplicate", data: {txId: txId}};
+        }
+
+    });
+
+    router.post('/accept_quick_swap', async (ctx: Context) => {
+        let { chain_id, receiver, token_id, amount, acceptTokenId, acceptAmountOutMin, nonce } = ctx.request.body;
+        receiver = hexlify(receiver, { allowMissingPrefix: true });
+        loggerAccept.info(chain_id, receiver, token_id, amount, acceptTokenId, acceptAmountOutMin, nonce);
+
+        try {
+            let txId = await accept(AcceptTypeEnum.QuickSwapAccept, Number(chain_id), receiver, Number(token_id), amount, Number(acceptTokenId), acceptAmountOutMin, Number(nonce));
+            ctx.response.body = { result: true, errorMsg: "OK", data: { txId: txId } };
+        } catch (err) {
+            ctx.response.body = { result: false, errorMsg: JSON.stringify(err), data: {} };
+            loggerAccept.error(err);
         }
 
     });

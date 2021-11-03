@@ -55,7 +55,12 @@ async function insert(arr: Array<BrokerData>) {
                     log.debug('mongodb inserted docs => ', res);
             } catch (err) {
                 reject(err);
-                log.error('mongodb inserted error => ', err);
+                if (err.code == 11000) {
+                    //hashId_1 dup key
+                    log.error("mongodb inserted error =>", 'duplicate');
+                } else {
+                    log.error('mongodb inserted error => ', err);
+                }
             }
         });
     });

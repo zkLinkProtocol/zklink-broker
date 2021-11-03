@@ -2,8 +2,6 @@
 pragma solidity ^0.6.12;
 
 contract zkLink {
-    
-
     function accept(
         address accepter,
         address receiver,
@@ -36,4 +34,14 @@ contract zkLink {
     ) external returns (bool) {
         return true;
     }
+
+    function acceptQuickSwap(
+        address accepter,
+        address receiver,
+        uint16 toTokenId,
+        uint128 amountOut,
+        uint16 acceptTokenId,
+        uint128 acceptAmountOutMin,
+        uint32 nonce
+    ) external payable {}
 }

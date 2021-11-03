@@ -1,7 +1,11 @@
 import { hexlify, keccak256 } from "ethers/lib/utils";
 import * as RLP from "@ethersproject/rlp";
-
+enum AcceptTypeEnum {
+    Accept,//0
+    QuickSwapAccept//1
+}
 class BrokerData {
+    public acceptType: AcceptTypeEnum;
     public borkerName: string;
     public chainId: number;
     public receiver: string;
@@ -9,7 +13,7 @@ class BrokerData {
     // The user wants to receive 
     public tokenIdReceive: number;
     public amount: string;
-    public withdrawFee: number;
+    public feeOrAmountOutMin: number | string;
     // L2 nonce ,not ethereum nonce
     public nonce_l2: number;
 
@@ -39,33 +43,36 @@ class BrokerData {
     public confirmTime: number;
 
     constructor(
+        _acceptType: AcceptTypeEnum,
         _brokerName: string,
         _chainId: number,
         _receiver: string,
         _tokenId: number,
         _tokenIdReceive: number,
         _amount: string,
-        _withdrawFee: number,
+        _feeOrAmountOutMin: number | string,
         _nonce_l2: number,
         _accepter: string
     ) {
+        this.acceptType = _acceptType;
         this.borkerName = _brokerName;
         this.chainId = _chainId;
         this.receiver = _receiver;
         this.tokenId = _tokenId;
         this.tokenIdReceive = _tokenIdReceive;
         this.amount = _amount;
-        this.withdrawFee = _withdrawFee;
+        this.feeOrAmountOutMin = _feeOrAmountOutMin;
         this.nonce_l2 = _nonce_l2;
         this.accepter = _accepter;
 
         let arr = [];
+        arr.push(hexlify(this.acceptType));
         arr.push(hexlify(this.chainId));
         arr.push(this.receiver);
         arr.push(hexlify(this.tokenId));
         arr.push(hexlify(this.tokenIdReceive));
         arr.push(hexlify(this.amount, { allowMissingPrefix: true, hexPad: "left" }));
-        arr.push(hexlify(this.withdrawFee));
+        arr.push(hexlify(this.feeOrAmountOutMin, { allowMissingPrefix: true, hexPad: "left" }));
         arr.push(hexlify(this.nonce_l2));
         this.hashId = keccak256(RLP.encode(arr));
 
@@ -76,5 +83,5 @@ class BrokerData {
 }
 
 export {
-    BrokerData
+    BrokerData, AcceptTypeEnum
 }
