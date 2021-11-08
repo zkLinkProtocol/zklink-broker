@@ -153,6 +153,16 @@ async function checkConfirm(chainId: number) {
     let arr = await findMany(chainId, secret["broker-name"], 0);
     arr.forEach(async doc => {
         let data = doc as BrokerData;
+        //old data
+        if (data.feeOrAmountOutMin === undefined) {
+            loggerAccept.debug("feeOrAmountOutMin === undefined");
+            data.feeOrAmountOutMin = doc["withdrawFee"] || 0;
+        }
+        if (data.acceptType === undefined) {
+            loggerAccept.debug("data.acceptType === undefined");
+            data.acceptType = AcceptTypeEnum.Accept;
+        }
+
         let updateFuncHandle = null;
         if (data.signTime == 0) {
             //resign and send tx
