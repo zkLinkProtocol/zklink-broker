@@ -197,10 +197,10 @@ async function checkConfirm(chainId: number) {
 }
 
 setInterval(async () => {
-    await checkConfirm(0);
-    await checkConfirm(1);
-    await checkConfirm(2);
-    await checkConfirm(3);
+    // await checkConfirm(0);
+    // await checkConfirm(1);
+    // await checkConfirm(2);
+    // await checkConfirm(3);
 }, 10000);//10s
 export {
     accept
