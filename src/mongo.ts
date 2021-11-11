@@ -7,45 +7,26 @@ const client = new MongoClient(secret["mongo-uri"]);
 //, { useNewUrlParser: true, useUnifiedTopology: true }Î
 const dbName = secret["mongo-db-name"];
 const colName = "document";
-let removeTimeoutHandle = null;
-let collectionHandle = null;
-createIndex();
 
-async function push(cb) {
-    await cb(await getCollection());
-}
+import singletonTimeoutInstance from "./singletonTimeoutInstance";
+let singleton = singletonTimeoutInstance(async () => {
+    await client.connect();
+    const db = client.db(dbName);
+    return db.collection(colName);
+}, 60000, async () => {
+    await client.close();
+})
+//createIndex
+singleton.regist(async col => {
+    let res = await col.createIndex({ 'hashId': 1 }, { unique: true });
+    log.isDebugEnabled &&
+        log.debug('mongodb createIndex => ', res);
 
-async function getCollection() {
-    if (!collectionHandle) {
-        await client.connect();
-        log.isDebugEnabled &&
-            log.debug("Connected successfully to server");
-        const db = client.db(dbName);
-        collectionHandle = db.collection(colName);
-    }
-    removeTimeoutHandle &&
-        clearTimeout(removeTimeoutHandle);
-    removeTimeoutHandle = setTimeout(async function () {
-        log.isDebugEnabled &&
-            log.debug("mongodb client close");
-        await client.close();
-        collectionHandle = 0;
-    }, 60000);//60s
-    return collectionHandle;
-}
-
-function createIndex() {
-    push(async col => {
-        let res = await col.createIndex({ 'hashId': 1 }, { unique: true });
-        log.isDebugEnabled &&
-            log.debug('mongodb createIndex => ', res);
-
-    });
-}
+});
 
 async function insert(arr: Array<BrokerData>) {
     return new Promise((resolve, reject) => {
-        push(async col => {
+        singleton.regist(async col => {
             try {
                 let res = await col.insertMany(arr);
                 if (res.insertedCount == 1) {
@@ -67,7 +48,7 @@ async function insert(arr: Array<BrokerData>) {
 }
 async function findByHashId(hashId: string) {
     return new Promise((resolve, reject) => {
-        push(async col => {
+        singleton.regist(async col => {
             try {
                 let cursor = await col.find({ 'hashId': hashId });
                 if (await cursor.hasNext()) {
@@ -87,7 +68,7 @@ async function updateNonceAndTxId(hashId: string, nonce: string, txId: string, s
 }
 async function _updateNonceAndTxId(hashId: string, nonce: string, txId: string, signTime: number, signer: string, coindition: object) {
     return new Promise((resolve, reject) => {
-        push(async col => {
+        singleton.regist(async col => {
             try {
                 let res = await col.updateOne(coindition,
                     { '$set': { 'nonce': nonce, 'txId': txId, 'signTime': signTime, 'signer': signer } });
@@ -102,7 +83,7 @@ async function _updateNonceAndTxId(hashId: string, nonce: string, txId: string, 
     });
 }
 function updateConfirmTime(hashId: string, confirmTime: number) {
-    push(async col => {
+    singleton.regist(async col => {
         let res = await col.updateOne({ 'hashId': hashId },
             { '$set': { 'confirmTime': confirmTime } });
         log.isDebugEnabled &&
@@ -112,7 +93,7 @@ function updateConfirmTime(hashId: string, confirmTime: number) {
 
 async function findMany(chainId: number, brokerName: string, confirmTime: number): Promise<any[]> {
     return new Promise((resolve, _) => {
-        push(async col => {
+        singleton.regist(async col => {
             let cursor = await col.find({ 'borkerName': brokerName, 'chainId': chainId, 'confirmTime': confirmTime });
             let res = [];
             while (await cursor.hasNext()) {

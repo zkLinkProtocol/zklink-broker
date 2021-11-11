@@ -117,8 +117,7 @@ async function sign(acceptType: AcceptTypeEnum, networkName: string, wallet: Wal
         from: wallet.address,
         gasLimit: overrides.gasLimit,
         data: data,
-        value: 0,
-        type: 0,
+        value: 0
     };
 
     //step2 may loss the connection
