@@ -61,12 +61,12 @@ async function findByHashId(hashId: string) {
     });
 }
 async function updateNonceAndTxIdForce(hashId: string, nonce: string, txId: string, signTime: number, signer: string) {
-    return _updateNonceAndTxId(hashId, nonce, txId, signTime, signer, { 'hashId': hashId })
+    return _updateNonceAndTxId(nonce, txId, signTime, signer, { 'hashId': hashId })
 }
 async function updateNonceAndTxId(hashId: string, nonce: string, txId: string, signTime: number, signer: string) {
-    return _updateNonceAndTxId(hashId, nonce, txId, signTime, signer, { 'hashId': hashId, signTime: { '$eq': 0 } })
+    return _updateNonceAndTxId(nonce, txId, signTime, signer, { 'hashId': hashId, signTime: { '$eq': 0 } })
 }
-async function _updateNonceAndTxId(hashId: string, nonce: string, txId: string, signTime: number, signer: string, coindition: object) {
+async function _updateNonceAndTxId(nonce: string, txId: string, signTime: number, signer: string, coindition: object) {
     return new Promise((resolve, reject) => {
         singleton.regist(async col => {
             try {
