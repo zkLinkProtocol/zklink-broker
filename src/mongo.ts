@@ -8,7 +8,7 @@ const client = new MongoClient(secret["mongo-uri"]);
 const dbName = secret["mongo-db-name"];
 const colName = "document";
 
-import singletonTimeoutInstance from "./singletonTimeoutInstance";
+import singletonTimeoutInstance from "./utils/singletonTimeoutInstance";
 let singleton = singletonTimeoutInstance(async () => {
     await client.connect();
     const db = client.db(dbName);
