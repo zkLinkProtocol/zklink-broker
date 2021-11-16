@@ -1,4 +1,7 @@
-
+/**
+ * `regist` function will trigger `initial` function
+ * But in the `timeout` time, `initial` will only be executed once
+ */
 export default (initial, timeout: number = 0, timeoutEvent?) => {
     let timeoutHandle = null;
     let obj = null;
