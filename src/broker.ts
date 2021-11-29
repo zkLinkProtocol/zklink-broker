@@ -52,7 +52,11 @@ async function accept(acceptType: AcceptTypeEnum, chainId: number, receiver: str
         assert(typeof feeOrAmountOutMin == 'string', 'AcceptTypeEnum Error')
     }
 
-    let networkName: string = networkMap[chainId];
+    if (chainId < 1) {
+        throw "chainId is invalid, chainId: " + chainId
+    }
+
+    let networkName: string = networkMap[chainId - 1];
     if (!networkName) {
         throw "chainId not exist, chainId: " + chainId
     }

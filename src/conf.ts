@@ -8,15 +8,16 @@ const mainnet_providers = {
 
 
 // 0 1 2 3
-const testnet_network_map: string[] = ["matic_test", "rinkeby", "heco_test", "goerli"]
+const testnet_network_map: string[] = ["matic_test", "heco_test","rinkeby", "goerli"]
 
 const testnet_providers = {
-    rinkeby: new providers.JsonRpcProvider("https://rinkeby.infura.io/v3/34d267a41d3248d9b8ae6393a3f81838", {
+    rinkeby: new providers.JsonRpcProvider("https://rinkeby.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161", {
         name: "rinkeby-testnet",
         chainId: 4,
     }),
-    matic_test: new providers.JsonRpcProvider("https://rpc-mumbai.maticvigil.com", {
-        name: "matic-testnet",
+    //matic_test: new providers.JsonRpcProvider("https://rpc-mumbai.maticvigil.com", {
+    matic_test: new providers.JsonRpcProvider("https://matic-mumbai.chainstacklabs.com", {
+    name: "matic-testnet",
         chainId: 80001,
     }),
     goerli: new providers.JsonRpcProvider("https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161", {
