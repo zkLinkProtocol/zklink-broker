@@ -21,9 +21,9 @@ async function init(): Promise<number[]> {
     return signerCache.map(v => v.length);
 }
 
-function getSigner(chainId: number): string {
-    let res = signerCache[chainId][cur[chainId]];
-    cur[chainId] = (cur[chainId] + 1) % signerCache[chainId].length;
+function getSigner(i: number): string {
+    let res = signerCache[i][cur[i]];
+    cur[i] = (cur[i] + 1) % signerCache[i].length;
     return res;
 }
 

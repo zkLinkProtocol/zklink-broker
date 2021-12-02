@@ -44,7 +44,7 @@ const overrides = {
  * @param nonce_l2 
  * @returns txid
  */
-async function accept(acceptType: AcceptTypeEnum, chainId: number, receiver: string, tokenId: number, amount: string, tokenIdReceive: number, feeOrAmountOutMin: number | string, nonce_l2: number) {
+async function accept(acceptType: AcceptTypeEnum, chainId: number, receiver: string, tokenId: number, amount: string, tokenIdReceive: number, feeOrAmountOutMin: number | string, nonce_l2: number,sig: string) {
     // assert
     if (acceptType == AcceptTypeEnum.Accept) {
         assert(typeof feeOrAmountOutMin == 'number', 'AcceptTypeEnum Error')
@@ -61,7 +61,7 @@ async function accept(acceptType: AcceptTypeEnum, chainId: number, receiver: str
         throw "chainId not exist, chainId: " + chainId
     }
 
-    let wallet = new Wallet(getSigner(chainId), providers[networkName]);
+    let wallet = new Wallet(getSigner(chainId-1), providers[networkName]);
     let accepter = AccepterContractAddress[networkName];
     // let tokenIdReceive = tokenId;
     let data = new BrokerData(
@@ -146,13 +146,13 @@ action:
 const RESEND_PERIOD_TIME = 10 * 60 * 1000;// 5 * 60 * 1000  5min
 const BLOCK_CONFIRM_NUMBER = 6;
 async function checkConfirm(chainId: number) {
-    let networkName: string = networkMap[chainId];
+    let networkName: string = networkMap[chainId-1];
     if (!networkName) {
         loggerAccept.error("Broker: Error, network name not exist. chainId: %d", chainId);
         return;
     }
     let provider = providers[networkName];
-    let wallet = new Wallet(getSigner(chainId), providers[networkName]);
+    let wallet = new Wallet(getSigner(chainId-1), providers[networkName]);
     // query chainId= && brokerName= && confirmTime == 0  
     let arr = await findMany(chainId, secret["broker-name"], 0);
     arr.forEach(async doc => {
@@ -201,10 +201,10 @@ async function checkConfirm(chainId: number) {
 }
 
 setInterval(async () => {
-    await checkConfirm(0);
     await checkConfirm(1);
     await checkConfirm(2);
     await checkConfirm(3);
+    await checkConfirm(4);
 }, 10000);//10s
 export {
     accept

@@ -24,12 +24,12 @@ async function main() {
 
     app.use(bodyParser())
     router.post('/accept', async (ctx: Context) => {
-        let { chain_id, receiver, token_id, amount, withdrawFee, nonce } = ctx.request.body;
+        let { chain_id, receiver, token_id, amount, withdrawFee, nonce, sig } = ctx.request.body;
         receiver = hexlify(receiver, { allowMissingPrefix: true });
         loggerAccept.info(chain_id, receiver, token_id, amount, withdrawFee, nonce);
 
         try {
-            let txId = await accept(AcceptTypeEnum.Accept, Number(chain_id), receiver, Number(token_id), amount, Number(token_id), Number(withdrawFee), Number(nonce));
+            let txId = await accept(AcceptTypeEnum.Accept, Number(chain_id), receiver, Number(token_id), amount, Number(token_id), Number(withdrawFee), Number(nonce),sig);
             ctx.response.body = { result: true, errorMsg: "OK", data: { txId: txId } };
         } catch (err) {
             ctx.response.body = { result: false, errorMsg: JSON.stringify(err), data: {} };
@@ -39,12 +39,12 @@ async function main() {
     });
 
     router.post('/accept_quick_swap', async (ctx: Context) => {
-        let { chain_id, receiver, token_id, amount, acceptTokenId, acceptAmountOutMin, nonce } = ctx.request.body;
+        let { chain_id, receiver, token_id, amount, acceptTokenId, acceptAmountOutMin, nonce,sig } = ctx.request.body;
         receiver = hexlify(receiver, { allowMissingPrefix: true });
         loggerAccept.info(chain_id, receiver, token_id, amount, acceptTokenId, acceptAmountOutMin, nonce);
 
         try {
-            let txId = await accept(AcceptTypeEnum.QuickSwapAccept, Number(chain_id), receiver, Number(token_id), amount, Number(acceptTokenId), acceptAmountOutMin, Number(nonce));
+            let txId = await accept(AcceptTypeEnum.QuickSwapAccept, Number(chain_id), receiver, Number(token_id), amount, Number(acceptTokenId), acceptAmountOutMin, Number(nonce),sig);
             ctx.response.body = { result: true, errorMsg: "OK", data: { txId: txId } };
         } catch (err) {
             ctx.response.body = { result: false, errorMsg: JSON.stringify(err), data: {} };
