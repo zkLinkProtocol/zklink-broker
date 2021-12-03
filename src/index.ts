@@ -29,7 +29,11 @@ async function main() {
         loggerAccept.info(chain_id, receiver, token_id, amount, withdrawFee, nonce);
 
         try {
-            let txId = await accept(AcceptTypeEnum.Accept, Number(chain_id), receiver, Number(token_id), amount, Number(token_id), Number(withdrawFee), Number(nonce));
+            let real_chain_id = Number(chain_id) - 1;
+            if (real_chain_id < 0) {
+                throw Error("wrong chainId");
+            }
+            let txId = await accept(AcceptTypeEnum.Accept, real_chain_id, receiver, Number(token_id), amount, Number(token_id), Number(withdrawFee), Number(nonce));
             ctx.response.body = { result: true, errorMsg: "OK", data: { txId: txId } };
         } catch (err) {
             ctx.response.body = { result: false, errorMsg: JSON.stringify(err), data: {} };
@@ -44,7 +48,11 @@ async function main() {
         loggerAccept.info(chain_id, receiver, token_id, amount, acceptTokenId, acceptAmountOutMin, nonce);
 
         try {
-            let txId = await accept(AcceptTypeEnum.QuickSwapAccept, Number(chain_id), receiver, Number(token_id), amount, Number(acceptTokenId), acceptAmountOutMin, Number(nonce));
+            let real_chain_id = Number(chain_id) - 1;
+            if (real_chain_id < 0) {
+                throw Error("wrong chainId");
+            }
+            let txId = await accept(AcceptTypeEnum.QuickSwapAccept, real_chain_id, receiver, Number(token_id), amount, Number(acceptTokenId), acceptAmountOutMin, Number(nonce));
             ctx.response.body = { result: true, errorMsg: "OK", data: { txId: txId } };
         } catch (err) {
             ctx.response.body = { result: false, errorMsg: JSON.stringify(err), data: {} };
