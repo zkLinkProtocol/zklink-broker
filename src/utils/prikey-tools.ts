@@ -104,7 +104,7 @@ async function list(networkName: string, filenames: Array<string>, tokenId: numb
     let governanceContract = new Contract(GovernanceAddress[networkName], JSON.stringify(Governance.abi), providers[networkName]);
     let tokenAddress = await governanceContract.tokenAddresses(tokenId);
     let ERC20Contract = new Contract(tokenAddress, JSON.stringify(MockErc20.abi), providers[networkName]);
-    let pendingBalance = await zkLinkContract.getPendingBalance(accepter, tokenAddress);
+    //let pendingBalance = await zkLinkContract.getPendingBalance(accepter, tokenAddress);
     let allownance = await ERC20Contract.allowance(accepter, contract_addrss[networkName]);
     let accpeterTable = new AsciiTable("Accepter Info");
     accpeterTable.addRow('Accepter Contract Address', accepter);
@@ -113,7 +113,7 @@ async function list(networkName: string, filenames: Array<string>, tokenId: numb
     accpeterTable.addRow('Token Symbol', await ERC20Contract.symbol());
     accpeterTable.addRow('Balance', formatEther(await ERC20Contract.balanceOf(accepter)));
     accpeterTable.addRow('Allownance', formatEther(allownance));
-    accpeterTable.addRow('PendingBalance', formatEther(pendingBalance));
+    //accpeterTable.addRow('PendingBalance', formatEther(pendingBalance));
     console.log(accpeterTable.toString())
     var table = new AsciiTable()
     table.setHeading('Signer Addr', 'Gas Coin Balance', 'Broker Allowance');
