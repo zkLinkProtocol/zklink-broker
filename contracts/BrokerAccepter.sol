@@ -18,7 +18,12 @@ contract BrokerAccepter is Ownable {
         for (uint256 i = 0; i < spenders.length; i++) {
             zkLink(zklinkContract).brokerApprove(tokenId, spenders[i], amount);
         }
-        address tokenAddr = Governance(gonvernanceContract).tokenAddresses(tokenId);
+        //RegisteredToken memory rt = Governance(gonvernanceContract).tokens(tokenId);
+        //address tokenAddr = rt.tokenAddress; 
+        bool registered;
+        bool paused;
+        address tokenAddr;
+        (registered,paused,tokenAddr) = Governance(gonvernanceContract).tokens(tokenId);
         IERC20(tokenAddr).approve(zklinkContract, amount);
     }
 

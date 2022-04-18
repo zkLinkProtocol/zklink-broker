@@ -25,7 +25,7 @@ let myParseInt = (val) => {
     }
     throw Error("param is not number");
 }
-let networkNameOption = new Option('-c, --network-name <networkName>', 'Network Name').choices(['matic_test', 'heco_test', 'rinkeby', 'goerli']);
+let networkNameOption = new Option('-c, --network-name <networkName>', 'Network Name').choices(['matic_test', 'avax_test', 'rinkeby', 'goerli']);
 let tokenIdOption = new Option('-t, --token-id <tokenId>', 'Token ID');
 tokenIdOption.argParser(myParseInt);
 let keysPathOption = new Option('-p, --keys-path <keysPath>', 'Keys Path');
@@ -102,7 +102,8 @@ async function list(networkName: string, filenames: Array<string>, tokenId: numb
     let accepter = AccepterContractAddress[networkName];
     let zkLinkContract = new Contract(contract_addrss[networkName], JSON.stringify(zkLink.abi), providers[networkName]);
     let governanceContract = new Contract(GovernanceAddress[networkName], JSON.stringify(Governance.abi), providers[networkName]);
-    let tokenAddress = await governanceContract.tokenAddresses(tokenId);
+    let token = await governanceContract.tokens(tokenId);
+    let tokenAddress = token.tokenAddress;
     let ERC20Contract = new Contract(tokenAddress, JSON.stringify(MockErc20.abi), providers[networkName]);
     //let pendingBalance = await zkLinkContract.getPendingBalance(accepter, tokenAddress);
     let allownance = await ERC20Contract.allowance(accepter, contract_addrss[networkName]);
@@ -121,12 +122,12 @@ async function list(networkName: string, filenames: Array<string>, tokenId: numb
         let key = fs.readFileSync(v);
         let wallet = new Wallet(key.toString(), providers[networkName]);
         let balance = await wallet.getBalance();
-        let allowanceAmount = await zkLinkContract.brokerAllowance(tokenId, accepter, wallet.address);
-        let arr = [wallet.address, formatEther(balance), formatEther(allowanceAmount)];
+	let allowanceAmount = await zkLinkContract.brokerAllowance(tokenId, accepter, wallet.address);
+	let arr = [wallet.address, formatEther(balance), formatEther(allowanceAmount)];
         table.addRow.apply(table, arr);
     })).then(() => {
         console.log(table.toString());
-    })
+	})
 }
 
 function create(keysPath: string, keysCount: number) {
