@@ -8,34 +8,32 @@ DB_USERNAME="zklink"
 CONTRACT_CONF="contract_address.json"
 GOV_CONF="governance_address.json"
 ACCEPTER_CONF="accepter_contract_address.json"
-
-write_contract_conf() {
-cat > "conf/$CONTRACT_CONF" <<EOF
+PRY_CONF="periphery_address.json"
+write_conf() {
+        conf_type=$1
+        eval file_name=\$${conf_type^^}_CONF
+        eval r_addr=\$rinkeby_${conf_type}_address
+        eval p_addr=\$polygon_${conf_type}_address
+        eval g_addr=\$goerli_${conf_type}_address
+        eval a_addr=\$avax_${conf_type}_address
+        echo $file_name $r_addr $p_addr $g_addr $a_addr
+        #echo "123" > $filename
+cat > "conf/${file_name}" <<EOF
 {
-	"rinkeby": "$rinkeby_contract_address",
-	"matic_test": "$polygon_contract_address",
-	"goerli": "$goerli_contract_address",
-	"avax_test": "$avax_contract_address"
+        "rinkeby": "$r_addr",
+        "matic_test": "$p_addr",
+        "goerli": "$g_addr",
+        "avax_test": "$a_addr"
 }
 EOF
 }
 
-write_gov_conf() {
-cat > "conf/$GOV_CONF" << EOF
-{
-	"rinkeby": "$rinkeby_gov_address",
-	"matic_test": "$polygon_gov_address",
-	"goerli": "$goerli_gov_address",
-	"avax_test": "$avax_gov_address"
-}
-EOF
-}
 network_by_chainid() {
     case $1 in
-        "1")
+        "4")
             echo "polygon"
             ;;
-        "4")
+        "1")
             echo "avax"
             ;;
         "3")
@@ -61,31 +59,28 @@ gen_conf() {
             net=`network_by_chainid $chain_id`
             eval ${net}"_contract_address"=$ct_addr
             eval ${net}"_gov_address"=$gov_addr
+	    log_file_name=`find $ZKSYNC_HOME/zklink-contracts/log/ -name "*${net^^}*"`
+	    echo $log_file_name
+	    if [ "$log_file_name" != "" ];then
+	        periphery_addr=`cat $log_file_name|awk -F"[,:]" '{for(i=1;i<=NF;i++){if($i~'/peripheryProxyAddr/'){print $(i+1);}}}'|sed -e 's/[\",}]//g'`
+                eval ${net}"_pry_address"=$periphery_addr
+	    fi
         done
-	write_contract_conf
-	write_gov_conf
+	write_conf "contract"
+	write_conf "gov"
+	write_conf "pry"
 }
 
-gen_accepter_conf() {
-cat > "conf/$ACCEPTER_CONF" <<EOF
-{
-	"rinkeby": "$rinkeby_accepter",
-	"matic_test": "$polygon_accepter",
-	"goerli": "$goerli_accepter",
-	"avax_test": "$avax_accepter"
-}
-EOF
-}
 
 deploy_link() {
 	echo "Deploy Rinkeby Link..."
-	rinkeby_accepter=`yarn broker deploy -c rinkeby | xargs echo | awk -F " " '{print $11}'`
+	rinkeby_accepter_address=`yarn broker deploy -c rinkeby | xargs echo | awk -F " " '{print $11}'`
 	echo "Deploy Polygon Link..."
-	polygon_accepter=`yarn broker deploy -c matic_test | xargs echo | awk -F " " '{print $11}'`
+	polygon_accepter_address=`yarn broker deploy -c matic_test | xargs echo | awk -F " " '{print $11}'`
 	echo "Deploy Goerli Link..."
-	goerli_accepter=`yarn broker deploy -c goerli | xargs echo | awk -F " " '{print $11}'`
+	goerli_accepter_address=`yarn broker deploy -c goerli | xargs echo | awk -F " " '{print $11}'`
 	echo "Deploy Heco Link..."
-	avax_accepter=`yarn broker deploy -c avax_test | xargs echo | awk -F " " '{print $11}'`
+	avax_accepter_address=`yarn broker deploy -c avax_test | xargs echo | awk -F " " '{print $11}'`
 }
 
 gen_conf
@@ -104,7 +99,7 @@ sleep 3
 #echo "link deploy successful!"
 #sleep 3
 
-#gen_accepter_conf
+#write_conf "accepter"
 #echo $ACCEPTER_CONF' create successful!'
 #sleep 3
 
