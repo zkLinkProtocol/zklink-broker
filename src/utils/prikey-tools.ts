@@ -11,6 +11,7 @@ import secret from "../../conf/secret.json"
 import AccepterContractAddress from '../../conf/accepter_contract_address.json'
 import { deployContract } from "ethereum-waffle"
 import contract_addrss from "../../conf/contract_address.json"
+import periphery_address from "../../conf/periphery_address.json"
 import { Contract, Wallet, BigNumber } from "ethers"
 import { formatEther, parseEther } from '@ethersproject/units';
 import { Command, Option } from 'commander';
@@ -100,7 +101,7 @@ program.parse();
 
 async function list(networkName: string, filenames: Array<string>, tokenId: number) {
     let accepter = AccepterContractAddress[networkName];
-    let zkLinkContract = new Contract(contract_addrss[networkName], JSON.stringify(zkLink.abi), providers[networkName]);
+    let zkLinkContract = new Contract(periphery_address[networkName], JSON.stringify(zkLink.abi), providers[networkName]);
     let governanceContract = new Contract(GovernanceAddress[networkName], JSON.stringify(Governance.abi), providers[networkName]);
     let token = await governanceContract.tokens(tokenId);
     let tokenAddress = token.tokenAddress;
@@ -147,7 +148,7 @@ async function batchApprove(networkName: string, spenders: Array<string>, tokenI
     console.log(spenders);
     let batch = new Contract(AccepterContractAddress[networkName], JSON.stringify(BrokerAccepter.abi), accepterOwner);
     let gasLimit = spenders.length * 50000;
-    let tx = await batch.connect(accepterOwner).batchApprove(contract_addrss[networkName], GovernanceAddress[networkName], spenders, tokenId, BigNumber.from("0xffffffffffffffffffffffffffffffff"), { gasLimit: gasLimit })
+    let tx = await batch.connect(accepterOwner).batchApprove(periphery_address[networkName], GovernanceAddress[networkName], spenders, tokenId, BigNumber.from("0xffffffffffffffffffffffffffffffff"), { gasLimit: gasLimit })
     console.log(tx);
 }
 

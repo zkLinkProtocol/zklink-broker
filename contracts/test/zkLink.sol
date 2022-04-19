@@ -2,15 +2,20 @@
 pragma solidity ^0.6.12;
 
 contract zkLink {
-    function accept(
-        address accepter,
+    function acceptERC20(address accepter,
+        uint32 accountId,
         address receiver,
         uint16 tokenId,
         uint128 amount,
-        uint16 withdrawFee,
-        uint32 nonce
-    ) external payable {}
-
+        uint16 withdrawFeeRate,
+        uint32 nonce,
+        uint128 amountTransfer) external nonReentrant;
+    function acceptETH(address accepter,
+        uint32 accountId,
+        address payable receiver,
+        uint128 amount,
+        uint16 withdrawFeeRate,
+        uint32 nonce) external payable nonReentrant;
     function getPendingBalance(address _address, address _token)
         public
         view

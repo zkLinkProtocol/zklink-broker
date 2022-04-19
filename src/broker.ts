@@ -44,7 +44,7 @@ const overrides = {
  * @param nonce_l2 
  * @returns txid
  */
-async function accept(acceptType: AcceptTypeEnum, chainId: number, receiver: string, tokenId: number, amount: string, tokenIdReceive: number, feeOrAmountOutMin: number | string, nonce_l2: number) {
+async function accept(acceptType: AcceptTypeEnum, chainId: number, receiver: string, accountId: number, tokenId: number, amount: string, tokenIdReceive: number, feeOrAmountOutMin: number | string, nonce_l2: number) {
     // assert
     if (acceptType == AcceptTypeEnum.Accept) {
         assert(typeof feeOrAmountOutMin == 'number', 'AcceptTypeEnum Error')
@@ -60,11 +60,13 @@ async function accept(acceptType: AcceptTypeEnum, chainId: number, receiver: str
     let wallet = new Wallet(getSigner(chainId), providers[networkName]);
     let accepter = AccepterContractAddress[networkName];
     // let tokenIdReceive = tokenId;
+    let amountTransfer = amount - feeOrAmountOutMin;
     let data = new BrokerData(
         acceptType,
         secret["broker-name"],
         chainId,
-        receiver,
+	receiver,
+	accountId,
         tokenId,
         tokenIdReceive,
         amount,
@@ -84,7 +86,7 @@ async function accept(acceptType: AcceptTypeEnum, chainId: number, receiver: str
         }
     }
     let { rawTx: rawTx, txId: txId, nonce: nonce }
-        = await sign(acceptType, networkName, wallet, accepter, receiver, tokenId, amount, tokenIdReceive, feeOrAmountOutMin, nonce_l2);
+        = await sign(acceptType, accountId, networkName, wallet, accepter, receiver, tokenId, amount, tokenIdReceive, feeOrAmountOutMin, nonce_l2, amountTransfer);
 
     let result = await updateNonceAndTxId(data.hashId, nonce, txId, Date.now(), wallet.address);
 
@@ -101,12 +103,12 @@ async function accept(acceptType: AcceptTypeEnum, chainId: number, receiver: str
     return txId;
 }
 
-async function sign(acceptType: AcceptTypeEnum, networkName: string, wallet: Wallet, accepter: string, receiver: string, tokenId: number, amount: string, tokenIdReceive: number, feeOrAmountOutMin: number | string, nonce_l2: number) {
+async function sign(acceptType: AcceptTypeEnum,networkName: string, wallet: Wallet, accepter: string, accountId: number, receiver: string, tokenId: number, amount: string, tokenIdReceive: number, feeOrAmountOutMin: number | string, nonce_l2: number, amountTransfer: number) {
     let zkLinkContract = new Contract(contract_addrss[networkName], JSON.stringify(zkLink.abi), wallet);
     let data;
     if (acceptType == AcceptTypeEnum.Accept) {
         data = zkLinkContract.interface.encodeFunctionData("accept",
-            [accepter, receiver, tokenId, utils.parseUnits(amount, "wei"), feeOrAmountOutMin, nonce_l2]);
+            [accepter, accountId, receiver, tokenId, utils.parseUnits(amount, "wei"), feeOrAmountOutMin, nonce_l2,amountTransfer]);
     } else {
         // AcceptTypeEnum.QuickSwapAccept
         data = zkLinkContract.interface.encodeFunctionData("acceptQuickSwap",
@@ -182,7 +184,7 @@ async function checkConfirm(chainId: number) {
             setImmediate(async () => {
                 let { rawTx: rawTx, txId: txId, nonce: nonce } =
                     await sign(data.acceptType, networkName, wallet, data.accepter, data.receiver,
-                        data.tokenId, data.amount, data.tokenIdReceive, data.feeOrAmountOutMin, data.nonce_l2);
+                        data.tokenId, data.amount, data.tokenIdReceive, data.feeOrAmountOutMin, data.nonce_l2,data.transferAmount);
                 let result = await updateFuncHandle(data.hashId, nonce, txId, Date.now(), wallet.address);
                 if (result) {
                     let res = await wallet.provider.sendTransaction(rawTx);
