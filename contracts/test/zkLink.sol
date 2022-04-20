@@ -9,13 +9,13 @@ contract zkLink {
         uint128 amount,
         uint16 withdrawFeeRate,
         uint32 nonce,
-        uint128 amountTransfer) external nonReentrant;
+        uint128 amountTransfer) external {}
     function acceptETH(address accepter,
         uint32 accountId,
         address payable receiver,
         uint128 amount,
         uint16 withdrawFeeRate,
-        uint32 nonce) external payable nonReentrant;
+        uint32 nonce) external payable {}
     function getPendingBalance(address _address, address _token)
         public
         view

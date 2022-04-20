@@ -175,7 +175,8 @@ async function mintTokenToBrokerAccepter(networkName: string, tokenId: number) {
     let accepter = new Wallet(secret['accepter-key'], providers[networkName]);
     let batch = new Contract(AccepterContractAddress[networkName], JSON.stringify(BrokerAccepter.abi), accepter);
     let governanceContract = new Contract(GovernanceAddress[networkName], JSON.stringify(Governance.abi), providers[networkName]);
-    let tokenAddress = await governanceContract.tokenAddresses(tokenId);
+    let token = await governanceContract.tokens(tokenId);
+    let tokenAddress = token.tokenAddress;
     let ERC20Contract = new Contract(tokenAddress, JSON.stringify(MockErc20.abi), providers[networkName]);
     let data = ERC20Contract.interface.encodeFunctionData("mint", [batch.address, parseEther("10000000000000")]);
     let gasLimit = 100000;

@@ -7,13 +7,15 @@ enum AcceptTypeEnum {
 class BrokerData {
     public acceptType: AcceptTypeEnum;
     public borkerName: string;
-    public chainId: number;
     public receiver: string;
+    public chainId:number;
+    public accountId:number;
     public tokenId: number;
     // The user wants to receive 
     public tokenIdReceive: number;
     public amount: string;
     public feeOrAmountOutMin: number | string;
+    public amountTransfer:string;
     // L2 nonce ,not ethereum nonce
     public nonce_l2: number;
 
@@ -46,23 +48,27 @@ class BrokerData {
         _acceptType: AcceptTypeEnum,
         _brokerName: string,
         _chainId: number,
-        _receiver: string,
+	_receiver: string,
+	_accountId:number,
         _tokenId: number,
         _tokenIdReceive: number,
         _amount: string,
         _feeOrAmountOutMin: number | string,
-        _nonce_l2: number,
+	_nonce_l2: number,
+	_amountTransfer:string,
         _accepter: string
     ) {
         this.acceptType = _acceptType;
         this.borkerName = _brokerName;
         this.chainId = _chainId;
-        this.receiver = _receiver;
+	this.receiver = _receiver;
+	this.accountId = _accountId;
         this.tokenId = _tokenId;
         this.tokenIdReceive = _tokenIdReceive;
         this.amount = _amount;
         this.feeOrAmountOutMin = _feeOrAmountOutMin;
-        this.nonce_l2 = _nonce_l2;
+	this.nonce_l2 = _nonce_l2;
+	this.amountTransfer = _amountTransfer;
         this.accepter = _accepter;
 
         let arr = [];
@@ -73,7 +79,8 @@ class BrokerData {
         arr.push(hexlify(this.tokenIdReceive));
         arr.push(hexlify(this.amount, { allowMissingPrefix: true, hexPad: "left" }));
         arr.push(hexlify(this.feeOrAmountOutMin, { allowMissingPrefix: true, hexPad: "left" }));
-        arr.push(hexlify(this.nonce_l2));
+	arr.push(hexlify(this.nonce_l2));
+	arr.push(hexlify(this.amountTransfer, { allowMissingPrefix: true, hexPad: "left" }));
         this.hashId = keccak256(RLP.encode(arr));
 
         this.createTime = Date.now();
