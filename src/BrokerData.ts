@@ -2,7 +2,8 @@ import { hexlify, keccak256 } from "ethers/lib/utils";
 import * as RLP from "@ethersproject/rlp";
 enum AcceptTypeEnum {
     Accept,//0
-    QuickSwapAccept//1
+    QuickSwapAccept,//1
+    AcceptETH//2
 }
 class BrokerData {
     public acceptType: AcceptTypeEnum;

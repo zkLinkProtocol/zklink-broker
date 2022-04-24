@@ -32,8 +32,12 @@ async function main() {
             let real_chain_id = Number(chain_id) - 1;
             if (real_chain_id < 0) {
                 throw Error("wrong chainId");
-            }
-            let txId = await accept(AcceptTypeEnum.Accept, real_chain_id, receiver, Number(account_id), Number(token_id), amount, Number(token_id), Number(withdrawFee), Number(nonce),amountTransfer);
+	    }
+            let acceptType = AcceptTypeEnum.Accept;
+	    if (real_chain_id == Number(token_id)){
+	        acceptType = AcceptTypeEnum.AcceptETH;
+	    }
+            let txId = await accept(acceptType, real_chain_id, receiver, Number(account_id), Number(token_id), amount, Number(token_id), Number(withdrawFee), Number(nonce),amountTransfer);
             ctx.response.body = { result: true, errorMsg: "OK", data: { txId: txId } };
         } catch (err) {
             ctx.response.body = { result: false, errorMsg: JSON.stringify(err), data: {} };

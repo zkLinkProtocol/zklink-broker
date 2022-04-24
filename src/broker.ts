@@ -110,6 +110,9 @@ async function sign(acceptType: AcceptTypeEnum,networkName: string, wallet: Wall
     if (acceptType == AcceptTypeEnum.Accept) {
         data = zkLinkContract.interface.encodeFunctionData("acceptERC20",
             [accepter, accountId, receiver, tokenId, utils.parseUnits(amount, "wei"), feeOrAmountOutMin, nonce_l2,utils.parseUnits(amountTransfer,"wei")]);
+    } else if (acceptType == AcceptTypeEnum.AcceptETH){
+        data = zkLinkContract.interface.encodeFunctionData("acceptETH",
+	    [accepter, accountId, receiver, utils.parseUnits(amount, "wei"), feeOrAmountOutMin, nonce_l2]);
     } else {
         // AcceptTypeEnum.QuickSwapAccept
         data = zkLinkContract.interface.encodeFunctionData("acceptQuickSwap",
