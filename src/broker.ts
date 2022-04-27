@@ -12,9 +12,9 @@ import { getLogger } from "./log4js";
 import { BrokerData, AcceptTypeEnum } from "./BrokerData";
 import { keccak256 } from "ethers/lib/utils";
 import { assert } from "console";
+import { BigNumber } from "ethers";
 const loggerAccept = getLogger();// categorie: broker-accept
 const loggerBrokerSuccess = getLogger("broker-success");
-
 //accept func gasLimit
 const overrides = {
     gasLimit: 200000, // about 11,000
@@ -47,7 +47,7 @@ const overrides = {
  */
 async function accept(acceptType: AcceptTypeEnum, chainId: number, receiver: string, accountId: number, tokenId: number, amount: string, tokenIdReceive: number, feeOrAmountOutMin: number | string, nonce_l2: number,amountTransfer:string) {
     // assert
-    if (acceptType == AcceptTypeEnum.Accept) {
+    if (acceptType == AcceptTypeEnum.Accept || acceptType == AcceptTypeEnum.AcceptETH) {
         assert(typeof feeOrAmountOutMin == 'number', 'AcceptTypeEnum Error')
     } else {
         assert(typeof feeOrAmountOutMin == 'string', 'AcceptTypeEnum Error')
@@ -64,7 +64,7 @@ async function accept(acceptType: AcceptTypeEnum, chainId: number, receiver: str
     let data = new BrokerData(
         acceptType,
         secret["broker-name"],
-        chainId,
+        chainId+1,
 	receiver,
 	accountId,
         tokenId,
@@ -107,10 +107,12 @@ async function accept(acceptType: AcceptTypeEnum, chainId: number, receiver: str
 async function sign(acceptType: AcceptTypeEnum,networkName: string, wallet: Wallet, accepter: string, accountId: number, receiver: string, tokenId: number, amount: string, tokenIdReceive: number, feeOrAmountOutMin: number | string, nonce_l2: number, amountTransfer: string) {
     let zkLinkContract = new Contract(contract_addrss[networkName], JSON.stringify(zkLink.abi), wallet);
     let data;
+    let value = BigNumber.from('0');
     if (acceptType == AcceptTypeEnum.Accept) {
         data = zkLinkContract.interface.encodeFunctionData("acceptERC20",
             [accepter, accountId, receiver, tokenId, utils.parseUnits(amount, "wei"), feeOrAmountOutMin, nonce_l2,utils.parseUnits(amountTransfer,"wei")]);
     } else if (acceptType == AcceptTypeEnum.AcceptETH){
+        value =  utils.parseUnits(amount, "wei");
         data = zkLinkContract.interface.encodeFunctionData("acceptETH",
 	    [accepter, accountId, receiver, utils.parseUnits(amount, "wei"), feeOrAmountOutMin, nonce_l2]);
     } else {
@@ -123,7 +125,7 @@ async function sign(acceptType: AcceptTypeEnum,networkName: string, wallet: Wall
         from: wallet.address,
         gasLimit: overrides.gasLimit,
         data: data,
-        value: 0
+        value: value
     };
 
     //step2 may loss the connection

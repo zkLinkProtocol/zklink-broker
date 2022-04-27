@@ -4,7 +4,7 @@ PSQL_ADDR="pgm-8vb0ps1su256826461630.pgsql.zhangbei.rds.aliyuncs.com"
 
 DB_NAME="plasma_test"
 DB_USERNAME="zklink"
-
+SQL="psql $DATABASE_URL"
 CONTRACT_CONF="contract_address.json"
 GOV_CONF="governance_address.json"
 ACCEPTER_CONF="accepter_contract_address.json"
@@ -48,23 +48,25 @@ network_by_chainid() {
     esac
 }
 gen_conf() {
-        contract_config=`PGPASSWORD=qocpRmmxukAlJOe8CgY psql -h $PSQL_ADDR -d $DB_NAME -U $DB_USERNAME -A -t -c "select contract_addr,gov_contract_addr,chain_id from server_config order by chain_id asc"`
+        contract_config=`${SQL} -A -t -c "select contract_addr,gov_contract_addr,periphery_contract_addr,chain_id from server_config order by chain_id asc"`
         echo $contract_config
         for conf in $contract_config
         do
-            chain_id=`echo $conf|awk -F'|' '{print $3}'`
+            chain_id=`echo $conf|awk -F'|' '{print $4}'`
+	    pry_addr=`echo $conf|awk -F'|' '{print $3}'`
             gov_addr=`echo $conf|awk -F'|' '{print $2}'`
             ct_addr=`echo $conf|awk -F'|' '{print $1}'`
             echo $chain_id
             net=`network_by_chainid $chain_id`
             eval ${net}"_contract_address"=$ct_addr
             eval ${net}"_gov_address"=$gov_addr
-	    log_file_name=`find $ZKSYNC_HOME/zklink-contracts/log/ -name "*${net^^}*"`
-	    echo $log_file_name
-	    if [ "$log_file_name" != "" ];then
-	        periphery_addr=`cat $log_file_name|awk -F"[,:]" '{for(i=1;i<=NF;i++){if($i~'/peripheryProxyAddr/'){print $(i+1);}}}'|sed -e 's/[\",}]//g'`
-                eval ${net}"_pry_address"=$periphery_addr
-	    fi
+	    #log_file_name=`find $ZKSYNC_HOME/zklink-contracts/log/ -name "*${net^^}*"`
+	    #echo $log_file_name
+	    #if [ "$log_file_name" != "" ];then
+	    #    periphery_addr=`cat $log_file_name|awk -F"[,:]" '{for(i=1;i<=NF;i++){if($i~'/peripheryProxyAddr/'){print $(i+1);}}}'|sed -e 's/[\",}]//g'`
+            #    eval ${net}"_pry_address"=$periphery_addr
+	    #fi
+	    eval ${net}"_pry_address"=$pry_addr
         done
 	write_conf "contract"
 	write_conf "gov"
@@ -103,8 +105,8 @@ sleep 3
 #echo $ACCEPTER_CONF' create successful!'
 #sleep 3
 
-bash approve.sh all
+bash action.sh all approve
 echo "approve successful!"
 
-#bash mint.sh all
+#bash action.sh all mint
 #echo "mint successful!"
