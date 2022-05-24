@@ -8,8 +8,7 @@ const mainnet_providers = {
 
 
 // 1 2 3 4
-//const testnet_network_map: string[] = ["matic_test", "avax_test", "rinkeby", "goerli"]
-const testnet_network_map: string[] = ["avax_test","goerli","matic_test","rinkeby"]
+const testnet_network_map: string[] = ["matic_test", "avax_test", "rinkeby", "goerli"]
 const testnet_providers = {
     rinkeby: new providers.JsonRpcProvider("https://rinkeby.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161", {
         name: "rinkeby-testnet",

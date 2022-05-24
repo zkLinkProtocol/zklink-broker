@@ -30,16 +30,16 @@ EOF
 
 network_by_chainid() {
     case $1 in
-        "4")
+        "1")
             echo "polygon"
             ;;
-        "1")
+        "2")
             echo "avax"
             ;;
         "3")
-            echo "rinekby"
+            echo "rinkeby"
             ;;
-        "2")
+        "4")
             echo "goerli"
             ;;
         "*")

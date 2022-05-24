@@ -158,8 +158,10 @@ async function batchTransfer(networkName: string, spenders: Array<string>, amoun
     let batch = new Contract(AccepterContractAddress[networkName], JSON.stringify(BrokerAccepter.abi), accepter);
     let gasLimit = spenders.length * 30000;
     let _amount = parseEther(amount);
-    let value = _amount.mul(spenders.length + "")
-    let tx = await batch.connect(accepter).bacthTransfer(spenders, _amount, parseEther(minAmount), { gasLimit: gasLimit, value: value })
+    let _value = _amount.mul(spenders.length);
+    console.log(_value);
+    console.log(parseEther(minAmount));
+    let tx = await batch.connect(accepter).bacthTransfer(spenders, _amount, parseEther(minAmount), { gasLimit: gasLimit, value: _value });
     console.log(tx);
 }
 
