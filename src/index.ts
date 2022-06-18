@@ -34,7 +34,7 @@ async function main() {
                 throw Error("wrong chainId");
 	    }
             let acceptType = AcceptTypeEnum.Accept;
-	    if (Number(chain_id) == Number(token_id)){
+	    if (Number(31+chain_id) == Number(token_id)){
 	        acceptType = AcceptTypeEnum.AcceptETH;
 	    }
             let txId = await accept(acceptType, real_chain_id, receiver, Number(account_id), Number(token_id), amount, Number(token_id), Number(withdrawFee), Number(nonce),amountTransfer);

@@ -2,7 +2,6 @@ import { providers, networkMap } from "./conf";
 import { Contract, Wallet, utils } from "ethers"
 import secret from "../conf/secret.json"
 import contract_addrss from "../conf/contract_address.json"
-import periphery_address from "../conf/periphery_address.json"
 import zkLink from "../build/zkLink.json"
 import { getSigner } from "./signer";
 import { insertBrokerData, updateConfirmTime, updateNonceAndTxId, findMany, findByHashId, updateNonceAndTxIdForce } from "./mongo";
@@ -121,7 +120,7 @@ async function sign(acceptType: AcceptTypeEnum,networkName: string, wallet: Wall
             [accepter, receiver, tokenId, utils.parseUnits(amount, "wei"), tokenIdReceive, utils.parseUnits(feeOrAmountOutMin.toString(), "wei"), nonce_l2])
     }
     let tx: TransactionRequest = {
-        to: periphery_address[networkName],
+        to: contract_addrss[networkName],
         from: wallet.address,
         gasLimit: overrides.gasLimit,
         data: data,

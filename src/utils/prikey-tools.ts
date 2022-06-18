@@ -5,13 +5,11 @@ import { providers } from "../conf";
 import zkLink from "../../build/zkLink.json"
 import Governance from "../../build/Governance.json"
 import MockErc20 from "../../build/MockErc20.json"
-import GovernanceAddress from "../../conf/governance_address.json"
 import BrokerAccepter from "../../build/BrokerAccepter.json"
 import secret from "../../conf/secret.json"
 import AccepterContractAddress from '../../conf/accepter_contract_address.json'
 import { deployContract } from "ethereum-waffle"
-import contract_addrss from "../../conf/contract_address.json"
-import periphery_address from "../../conf/periphery_address.json"
+import contract_address from "../../conf/contract_address.json"
 import { Contract, Wallet, BigNumber } from "ethers"
 import { formatEther, parseEther } from '@ethersproject/units';
 import { Command, Option } from 'commander';
@@ -101,13 +99,12 @@ program.parse();
 
 async function list(networkName: string, filenames: Array<string>, tokenId: number) {
     let accepter = AccepterContractAddress[networkName];
-    let zkLinkContract = new Contract(periphery_address[networkName], JSON.stringify(zkLink.abi), providers[networkName]);
-    let governanceContract = new Contract(GovernanceAddress[networkName], JSON.stringify(Governance.abi), providers[networkName]);
-    let token = await governanceContract.tokens(tokenId);
+    let zkLinkContract = new Contract(contract_address[networkName], JSON.stringify(zkLink.abi), providers[networkName]);
+    let token = await zkLinkContract.tokens(tokenId);
     let tokenAddress = token.tokenAddress;
     let ERC20Contract = new Contract(tokenAddress, JSON.stringify(MockErc20.abi), providers[networkName]);
     //let pendingBalance = await zkLinkContract.getPendingBalance(accepter, tokenAddress);
-    let allownance = await ERC20Contract.allowance(accepter, contract_addrss[networkName]);
+    let allownance = await ERC20Contract.allowance(accepter, contract_address[networkName]);
     let accpeterTable = new AsciiTable("Accepter Info");
     accpeterTable.addRow('Accepter Contract Address', accepter);
     accpeterTable.addRow('Token Contract Address', tokenAddress);
@@ -148,7 +145,7 @@ async function batchApprove(networkName: string, spenders: Array<string>, tokenI
     console.log(spenders);
     let batch = new Contract(AccepterContractAddress[networkName], JSON.stringify(BrokerAccepter.abi), accepterOwner);
     let gasLimit = spenders.length * 50000;
-    let tx = await batch.connect(accepterOwner).batchApprove(periphery_address[networkName], GovernanceAddress[networkName], spenders, tokenId, BigNumber.from("0xffffffffffffffffffffffffffffffff"), { gasLimit: gasLimit })
+    let tx = await batch.connect(accepterOwner).batchApprove(contract_address[networkName], spenders, tokenId, BigNumber.from("0xffffffffffffffffffffffffffffffff"), { gasLimit: gasLimit })
     console.log(tx);
 }
 
@@ -176,7 +173,7 @@ async function deployBrokerAccepter(networkName: string) {
 async function mintTokenToBrokerAccepter(networkName: string, tokenId: number) {
     let accepter = new Wallet(secret['accepter-key'], providers[networkName]);
     let batch = new Contract(AccepterContractAddress[networkName], JSON.stringify(BrokerAccepter.abi), accepter);
-    let governanceContract = new Contract(GovernanceAddress[networkName], JSON.stringify(Governance.abi), providers[networkName]);
+    let governanceContract = new Contract(contract_address[networkName], JSON.stringify(Governance.abi), providers[networkName]);
     let token = await governanceContract.tokens(tokenId);
     let tokenAddress = token.tokenAddress;
     let ERC20Contract = new Contract(tokenAddress, JSON.stringify(MockErc20.abi), providers[networkName]);

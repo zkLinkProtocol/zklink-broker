@@ -5,12 +5,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./TransferHelper.sol";
 import "./test/zkLink.sol";
-import "./test/Governance.sol";
 
 contract BrokerAccepter is Ownable {
     function batchApprove(
         address zklinkContract,
-        address gonvernanceContract,
         address[] memory spenders,
         uint16 tokenId,
         uint128 amount
@@ -21,7 +19,7 @@ contract BrokerAccepter is Ownable {
         bool registered;
         bool paused;
         address tokenAddr;
-        (registered,paused,tokenAddr) = Governance(gonvernanceContract).tokens(tokenId);
+        (registered,paused,tokenAddr) = zkLink(zklinkContract).tokens(tokenId);
         IERC20(tokenAddr).approve(zklinkContract, amount);
     }
 
