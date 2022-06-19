@@ -7,6 +7,8 @@ import "./TransferHelper.sol";
 import "./test/zkLink.sol";
 
 contract BrokerAccepter is Ownable {
+    receive() external payable {}
+    
     function batchApprove(
         address zklinkContract,
         address[] memory spenders,
